@@ -188,3 +188,98 @@ Example valid address:
 This address "signals" it has beforeSwap, afterSwap, afterDonate!
 ```
 
+---
+
+## 🎨 Visual: The Checking Process
+
+```
+USER TRIES TO SWAP
+        │
+        ▼
+┌───────────────────────┐
+│  PoolManager checks   │
+│  "Does hook have      │
+│   beforeSwap?"        │
+└───────┬───────────────┘
+        │
+        ▼
+┌─────────────────────────────────────┐
+│  Read hook address:                 │
+│  0x...00E0                          │
+│                                     │
+│  Convert to binary:                 │
+│  ...0000 1110 0000                  │
+│         ^^^                         │
+│  Check bit 8: 1 ✓                   │
+│                                     │
+│  Result: YES, beforeSwap exists!    │
+└────────┬────────────────────────────┘
+         │
+         ▼
+┌───────────────────────┐
+│  Call hook.beforeSwap │
+└───────────────────────┘
+```
+
+---
+
+## 🔧 How PoolManager Checks Flags
+
+In the actual V4 code:
+
+```solidity
+library Hooks {
+    // Flag values (bit positions)
+    uint256 constant BEFORE_SWAP_FLAG = 1 << 8;  // Bit 8
+    uint256 constant AFTER_SWAP_FLAG = 1 << 7;   // Bit 7
+
+    // Check if hook has beforeSwap
+    function hasPermission(address hook, uint256 flag)
+        internal pure returns (bool) {
+        return uint256(uint160(hook)) & flag != 0;
+    }
+}
+
+// Usage:
+if (Hooks.hasPermission(hookAddress, BEFORE_SWAP_FLAG)) {
+    // Call beforeSwap
+    hook.beforeSwap(...);
+}
+```
+
+**What's happening?**
+- `uint256(uint160(hook))`: Convert address to number
+- `& flag`: Bitwise AND operation (checks if bit is set)
+- `!= 0`: If result is non-zero, bit is set!
+
+---
+
+## 🎨 Visual: Bitwise AND Operation
+
+```
+Hook Address (as binary): 0000 1110 0000
+BEFORE_SWAP_FLAG:         0001 0000 0000 (bit 8)
+                          ─────────────────
+                AND →     0000 0000 0000 = 0  ❌ (No beforeSwap)
+
+Wait, wrong example! Let me fix:
+
+Hook Address (as binary): 0000 1110 0000
+                               ^^^
+                          Bit 8 is 1!
+
+BEFORE_SWAP_FLAG:         0001 0000 0000
+                          ─────────────────
+                AND →     0001 0000 0000 ≠ 0  ✅ (Has beforeSwap!)
+```
+
+---
+
+## 🏭 Address Mining - How Do You Get The Right Address?
+
+**Problem**: You can't just "pick" your deployment address. It's determined by:
+```
+address = hash(deployer, nonce)
+```
+
+**Solution**: Try many times until you get a lucky address!
