@@ -81,3 +81,86 @@ Time saved: Tons!
                                    ┌─────────────┐     │
                                    │  USDC/DAI   │     │
                                    │    Pool     │─────┘
+                                   └─────────────┘  5. Transfer DAI
+
+Total Token Transfers:
+1. ETH from user to Pool 1
+2. USDC from Pool 1 to Pool 2
+3. DAI from Pool 2 to user
+
+= 3 TRANSFERS (expensive!)
+```
+
+### V4: Multi-Hop Swap with Flash Accounting
+```
+                      ┌─────────────────────────┐
+                      │     POOL MANAGER        │
+                      │                         │
+   ┌──────┐           │  ┌─────────────────┐   │      ┌──────┐
+   │ USER │──1. ETH──→│  │ 📝 Ledger:      │   │      │ USER │
+   │      │           │  │                 │   │      │      │
+   │      │           │  │ User: -1 ETH    │   │←─4.──│      │
+   │      │           │  │       ↓         │   │  DAI │      │
+   └──────┘           │  │ 2. Calc USDC    │   │      └──────┘
+                      │  │       ↓         │   │
+                      │  │ 3. Calc DAI     │   │
+                      │  │                 │   │
+                      │  │ User: +100 DAI  │   │
+                      │  └─────────────────┘   │
+                      │                         │
+                      └─────────────────────────┘
+
+Total Token Transfers:
+1. ETH from user to PoolManager
+2. DAI from PoolManager to user
+
+= 2 TRANSFERS (cheap!)
+
+Steps 2 & 3 are just MATH, no actual token movement!
+```
+
+---
+
+## 🔐 The Locking Mechanism
+
+**One-line**: Locking ensures the PoolManager keeps proper track of all debits/credits and makes sure everything balances out before finishing.
+
+Think of it like a bank vault:
+
+```
+1. Vault is LOCKED (secure, nothing can happen)
+2. Customer wants to do business → UNLOCK vault
+3. Customer does multiple transactions (deposits, withdrawals)
+4. Bank keeps a ledger of everything
+5. End of business → Check if ledger balances out
+6. If balanced → LOCK vault
+   If NOT balanced → REJECT everything and try again
+```
+
+---
+
+## 🎨 Visual: The Lock/Unlock Flow
+
+```
+                    POOL MANAGER STATE
+                    ═════════════════
+
+Step 1:  ┌────────────┐
+         │  🔒 LOCKED │  ← Default state: Safe and secure
+         └────────────┘
+
+Step 2:  User calls unlock()
+         ↓
+         ┌──────────────┐
+         │  🔓 UNLOCKED │  ← Work can happen now!
+         └──────────────┘
+         ↓
+         ┌─────────────────────────────────┐
+         │  📋 Balance Delta Ledger:       │
+         │  (Tracks debits & credits)      │
+         │                                  │
+         │  Token A: 0                      │
+         │  Token B: 0                      │
+         │  ...                             │
+         └─────────────────────────────────┘
+
