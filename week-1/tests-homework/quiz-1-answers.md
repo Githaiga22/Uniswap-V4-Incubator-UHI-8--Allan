@@ -130,3 +130,47 @@ Binary: ...0001 1110 0000
                └──── Bit 9: (not set)
 
 Address = Capability Map!
+```
+
+**Explanation**: Each hook function corresponds to a specific bit in the address. PoolManager checks the address bits to know which functions to call.
+
+**Why others are wrong**:
+- A: No registration function needed
+- B: Contract storage isn't used for this
+- D: Not a mapping, it's in the address itself
+
+---
+
+## Question 5: Address Mining
+
+**Why is address mining necessary when deploying hooks?**
+
+### ✅ Answer: D - To embed hook capability flags in the address
+
+### Why?
+
+```
+Mining Process:
+
+Want: beforeSwap + afterSwap
+Need: Bits 7 & 8 = 1
+
+Try salt 1 → Address: 0x...1234
+Binary: ...0001 0011 0100
+Bits 7&8: 01 ❌
+
+Try salt 2 → Address: 0x...5678
+Binary: ...0101 0110 1000
+Bits 7&8: 01 ❌
+
+Try salt 157 → Address: 0x...01E0
+Binary: ...0001 1110 0000
+Bits 7&8: 11 ✅ FOUND!
+
+Deploy with salt 157!
+```
+
+**Explanation**: You need an address where specific bits match your implemented functions. Mining tries different deployment salts until finding a matching address.
+
+**Why others are wrong**:
+- A: Collision avoidance isn't the goal
