@@ -124,3 +124,66 @@ contract UniswapV3Factory {
     }
 }
 
+// Result: Pool lives at 0xABC123... (separate contract address)
+```
+
+### V4 Style (New Way)
+```solidity
+// V4: Library with reusable logic
+library Pool {
+    function swap(State storage self, ...) {
+        // Swap logic here
+    }
+
+    function modifyPosition(State storage self, ...) {
+        // Liquidity logic here
+    }
+}
+
+// V4: PoolManager uses the library
+contract PoolManager {
+    using Pool for *;
+
+    // All pools stored in ONE mapping
+    mapping(PoolId => Pool.State) internal pools;
+
+    function swap(PoolId id, ...) {
+        // Call library function on the pool's state
+        pools[id].swap(...);  // Internal call, NOT external!
+    }
+}
+
+// Result: Pool is just data in the PoolManager contract
+```
+
+---
+
+## 🔑 Key Differences
+
+| Aspect | V3 (Multi-Contract) | V4 (Singleton) |
+|--------|---------------------|----------------|
+| **Pool Storage** | Separate contract per pool | All pools in PoolManager |
+| **Code Execution** | Each pool has its own code | Shared library functions |
+| **Function Calls** | External (expensive) | Internal (cheap) |
+| **Pool Creation** | Deploy new contract | Add entry to mapping |
+| **Multi-hop Swaps** | Call multiple contracts | Call one contract multiple times |
+| **Gas Cost** | Higher | Lower |
+
+---
+
+## 📦 What is Pool.State?
+
+Think of `Pool.State` as a folder that contains all the information about a pool:
+
+```
+Pool.State Folder:
+├── 📊 Current Price (sqrtPriceX96)
+├── 📍 Current Tick
+├── 💰 Liquidity Amount
+├── 🎯 Fee Configuration
+├── 🔗 Hook Address (if any)
+├── 📈 Observation Data (for price history)
+└── 🔐 Lock Status
+```
+
+In V3, each pool contract had these as storage variables.
