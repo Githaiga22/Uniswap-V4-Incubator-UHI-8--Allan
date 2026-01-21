@@ -131,3 +131,136 @@ This is actually a HUGE benefit - no cleanup code needed, no gas spent on cleanu
 
 ### 7. V3 vs V4 Evolution
 **Q**: "What was the main bottleneck or pain point from V3 that V4 was specifically designed to solve? Was it purely gas costs, or were there other major issues?"
+
+**A**: Great question! While gas costs were a big factor, V4 was primarily driven by **lack of customization**. Let me explain:
+
+**V3 pain points**:
+1. **No customization**: Want dynamic fees? Too bad. Want limit orders? Can't do it.
+2. **High gas costs**: Especially for multi-hop swaps
+3. **Governance battles**: Every feature needs DAO approval
+4. **Slow innovation**: Takes forever to add new features
+
+**V4 solution**:
+- **Hooks = permissionless innovation**: Anyone can build custom features
+- **Gas efficiency**: Singleton + flash accounting as enablers
+- **No governance bottleneck**: Build without asking permission
+
+Think of it like iPhone vs Android:
+- V3 = iPhone: Polished but limited
+- V4 = Android: Customizable, open ecosystem
+
+The goal wasn't just "cheaper V3" - it was "enable infinite experiments we never imagined"!
+
+---
+
+### 8. Hook Composability
+**Q**: "Can multiple hooks work together on the same pool? For example, could one hook handle dynamic fees while another handles MEV protection? Or is it one hook per pool?"
+
+**A**: Excellent question! It's **one hook contract per pool**, BUT - and this is important - that one hook can do multiple things!
+
+```
+❌ Can't do this:
+Pool → Hook 1 (dynamic fees)
+    → Hook 2 (MEV protection)
+    → Hook 3 (rewards)
+
+✅ Can do this:
+Pool → MegaHook (does all three!)
+       ├─ Dynamic fees logic
+       ├─ MEV protection logic
+       └─ Rewards logic
+```
+
+So you need to combine your features into ONE hook contract. Think of it like:
+- **Not allowed**: Multiple apps running on your phone at once for the same task
+- **Allowed**: One app that has multiple features built in
+
+Later in the course, we'll see patterns for composing hook functionality inside a single contract!
+
+---
+
+### 9. Liquidity Fragmentation
+**Q**: "With potentially many pools for the same token pair (different hooks, fees, etc.), how do routers decide which pool to use for a swap? Is there a recommended default pool concept?"
+
+**A**: This is THE big question everyone asks! Here's how it works in practice:
+
+**Router decision process**:
+1. Enumerate all ETH/USDC pools
+2. For each pool:
+   - Simulate the swap
+   - Calculate output amount (accounting for fees, gas, etc.)
+   - Score the route
+3. Choose the best one
+
+**In practice**:
+- For major pairs, 2-3 pools usually dominate
+- Most liquidity concentrates in the best pools
+- Aggregators (like Uniswap X) handle this automatically
+- Users don't need to think about it
+
+**Analogy**: Multiple routes from home to work:
+- Highway (fast, expensive toll) = High-gas fancy hook pool
+- Side roads (slow, free) = No-hook pool
+- Express lane (fast, cheap) = Optimized hook pool
+
+Your GPS (router) picks the best route automatically!
+
+We saw this same concern with V3 (multiple fee tiers), and it turned out fine. Market forces are powerful!
+
+---
+
+## 💰 Economic & Market Questions
+
+### 10. Hook Economics
+**Q**: "Who pays for the extra gas cost if a hook adds expensive operations? The trader or the LP? And can hook creators charge fees for using their hooks?"
+
+**A**: Great economic thinking! Let's break this down:
+
+**Who pays gas?**
+- **Trader always pays** the gas for the entire transaction
+- This includes hook execution
+- LPs don't pay gas for swaps (they pay gas to add/remove liquidity)
+
+**Example**:
+```
+Swap in normal pool:      50,000 gas
+Swap with complex hook:  150,000 gas
+                         ───────────
+Trader pays:            +100,000 gas
+```
+
+**Can hooks charge fees?**
+YES! Several ways:
+1. **Protocol fees**: Hook takes a cut of swap fees
+2. **Licensing fees**: Hook charges per use
+3. **LP fees**: Hook distributes extra rewards to LPs, funded by traders
+4. **NFT requirement**: Must hold NFT to use pool
+5. **Token gating**: Must stake HOOK tokens
+
+Think of it like toll roads:
+- Base pool = Free highway
+- Hook = Toll road with extra features
+- Traders choose if the features are worth the cost!
+
+---
+
+### 11. Dynamic Fees
+**Q**: "For hooks that implement dynamic fees, how quickly can fees adjust? Can they change mid-swap, or are they locked in when the swap starts?"
+
+**A**: Excellent edge case question! Here's how it works:
+
+**Fee is locked at the START of the swap**:
+```
+1. beforeSwap() is called
+   → Fee is calculated here (e.g., 0.3%)
+2. Swap happens with that fee
+3. afterSwap() is called
+   → Fee cannot change retroactively
+```
+
+**Why this matters**:
+- Prevents fee manipulation attacks
+- Gives traders certainty
+- Allows for slippage protection
+
+**However**, between transactions, fees can change as rapidly as the hook wants:
