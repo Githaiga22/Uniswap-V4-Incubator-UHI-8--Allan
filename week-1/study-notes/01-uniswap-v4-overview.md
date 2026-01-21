@@ -150,3 +150,39 @@ Designed for Layer 2 rollups and scaling solutions.
 
 ---
 
+## Resources & Citations
+
+1. **Uniswap V4 Documentation**
+   https://docs.uniswap.org/
+
+2. **Uniswap V4 Core GitHub**
+   https://github.com/Uniswap/v4-core
+
+3. **Uniswap V4 Whitepaper**
+   https://uniswap.org/whitepaper-v4.pdf
+
+---
+
+## Self-Check Questions
+
+1. What's the main architectural difference between V3 and V4?
+   <details>
+   <summary>Answer</summary>
+   V3 deploys one contract per pool. V4 uses ONE PoolManager contract for ALL pools.
+   </details>
+
+2. What are hooks?
+   <details>
+   <summary>Answer</summary>
+   Custom code plugins that modify pool behavior at specific execution points.
+   </details>
+
+3. Why is V4 more gas efficient?
+   <details>
+   <summary>Answer</summary>
+   Flash accounting transfers tokens only at transaction start/end, not intermediate steps.
+   </details>
+
+---
+
+**Next**: [Singleton Design](./02-singleton-design.md) - Understanding the one-contract architecture
