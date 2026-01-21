@@ -482,3 +482,124 @@ BSL concerns are VALID but MISUNDERSTOOD:
 | **BSL License** | Somewhat | Very Low | Doesn't affect hook devs |
 
 ---
+
+## 💡 The Big Picture
+
+```
+┌─────────────────────────────────────────┐
+│  ALL NEW TECH HAS CONCERNS              │
+├─────────────────────────────────────────┤
+│                                          │
+│  Uniswap V1 → "AMMs will never work"    │
+│           → Now $1T+ in volume           │
+│                                          │
+│  Uniswap V3 → "Concentrated liquidity   │
+│                is too complex"           │
+│           → Now dominates DEX market     │
+│                                          │
+│  Uniswap V4 → "Gas/fragmentation/BSL"   │
+│           → Time will tell, but...       │
+│               early signs are positive!  │
+│                                          │
+└─────────────────────────────────────────┘
+
+The concerns are real, but so are the solutions.
+Every innovation faces skepticism.
+V4's design addresses most concerns thoughtfully.
+```
+
+---
+
+## 🔗 Resources & Citations
+
+1. **Atrium Academy - V4 Concerns**
+   https://learn.atrium.academy/course/4b6c25df-f4c8-4b92-ab38-a930284d237e/technical-introduction
+
+2. **Uniswap V4 BSL License**
+   https://github.com/Uniswap/v4-core/blob/main/LICENSE
+
+3. **Understanding BSL**
+   https://www.mariadb.com/bsl-faq-mariadb/
+
+4. **Uniswap V3 License History**
+   https://uniswap.org/blog/uniswap-v3
+
+5. **V4 Gas Cost Analysis**
+   https://docs.uniswap.org/contracts/v4/overview
+
+---
+
+## ✅ Quick Self-Check
+
+1. **Will all V4 pools be more expensive than V3?**
+   <details>
+   <summary>Answer</summary>
+   No! Pools without hooks have similar gas costs to V3. Only pools with complex hooks will be more expensive.
+   </details>
+
+2. **Is liquidity fragmentation a new problem?**
+   <details>
+   <summary>Answer</summary>
+   No. V3 already had multiple pools per pair (different fee tiers), and the market naturally consolidated around the best pools.
+   </details>
+
+3. **Can you build and deploy hooks under BSL?**
+   <details>
+   <summary>Answer</summary>
+   Yes! The periphery code (where hooks live) is MIT licensed. You can build and deploy hooks freely.
+   </details>
+
+4. **When does the BSL expire?**
+   <details>
+   <summary>Answer</summary>
+   2025 (about 2 years after launch), same as V3's BSL period.
+   </details>
+
+5. **How do routing solvers help with fragmentation?**
+   <details>
+   <summary>Answer</summary>
+   They automatically check all available pools and find the best route/split for users, making fragmentation invisible to end users.
+   </details>
+
+---
+
+## 🎯 Final Thoughts
+
+**These concerns show that people are thinking critically about V4** - which is good! But they're mostly:
+
+1. **Theoretical** rather than practical
+2. **Solvable** through market mechanisms and technology
+3. **Temporary** (especially BSL)
+
+**As a hook developer**, you should:
+- ✅ Be aware of these concerns
+- ✅ Design gas-efficient hooks when possible
+- ✅ Build unique value that justifies any extra costs
+- ✅ Trust that the market will reward good designs
+
+The beauty of DeFi is that **the market decides**. If V4 hooks provide value, people will use them. If they don't, they won't. Let's build amazing things and let users choose!
+
+---
+
+**Previous**: [Liquidity Position Modification Flow](./09-liquidity-flow.md)
+
+---
+
+## 🎓 Week 1 Study Notes Complete!
+
+Congratulations! You've completed all the Week 1 technical introduction notes. You now understand:
+
+- ✅ V4 architecture (singleton, flash accounting, locking)
+- ✅ Transient storage and gas optimization
+- ✅ ERC-6909 claims for high-frequency trading
+- ✅ What hooks are and how they work
+- ✅ Hook address bitmaps and mining
+- ✅ Swap and liquidity flows
+- ✅ Common concerns and rebuttals
+
+**Next steps**:
+1. Review these notes before the workshop
+2. Prepare questions from the class-questions.md file
+3. Get ready to build your first hook in Week 2!
+
+**Keep going! You're doing great! 💪**
