@@ -162,3 +162,85 @@ Compare to regular storage:
 ## 🎨 Visual: How V4 Uses Transient Storage
 
 ```
+┌───────────────────────────────────────────────────────┐
+│  POOL MANAGER - Transient Storage Usage               │
+├───────────────────────────────────────────────────────┤
+│                                                        │
+│  Slot: 0xc090fc...ab23                                │
+│  ┌──────────────────────────────────────────────┐    │
+│  │  IS_UNLOCKED: true/false                     │    │
+│  │  ↑                                            │    │
+│  │  Tracks if PoolManager is currently unlocked │    │
+│  └──────────────────────────────────────────────┘    │
+│                                                        │
+│  Slot: 0x1234ab...def9                                │
+│  ┌──────────────────────────────────────────────┐    │
+│  │  BALANCE_DELTA_COUNT: 2                      │    │
+│  │  ↑                                            │    │
+│  │  Tracks how many unsettled balances exist    │    │
+│  └──────────────────────────────────────────────┘    │
+│                                                        │
+│  Slot: 0xabcd12...3456                                │
+│  ┌──────────────────────────────────────────────┐    │
+│  │  CURRENT_DELTA_ETH: -1000000000000000000     │    │
+│  │  ↑                                            │    │
+│  │  Tracks ETH balance delta                    │    │
+│  └──────────────────────────────────────────────┘    │
+│                                                        │
+│  All of this gets ERASED when transaction ends!       │
+└───────────────────────────────────────────────────────┘
+```
+
+---
+
+## 💻 Code Example: The Lock Library
+
+Here's the actual code V4 uses for locking:
+
+```solidity
+library Lock {
+    // The memory slot for the unlock state
+    // uint256(keccak256("Unlocked")) - 1
+    uint256 constant IS_UNLOCKED_SLOT =
+        uint256(0xc090fc4683624cfc3884e9d8de5eca132f2d0ec062aff75d43c0465d5ceeab23);
+
+    // Unlock the PoolManager
+    function unlock() internal {
+        uint256 slot = IS_UNLOCKED_SLOT;
+        assembly {
+            tstore(slot, true)  // ← TSTORE opcode!
+        }
+    }
+
+    // Lock the PoolManager
+    function lock() internal {
+        uint256 slot = IS_UNLOCKED_SLOT;
+        assembly {
+            tstore(slot, false)  // ← TSTORE opcode!
+        }
+    }
+
+    // Check if unlocked
+    function isUnlocked() internal view returns (bool unlocked) {
+        uint256 slot = IS_UNLOCKED_SLOT;
+        assembly {
+            unlocked := tload(slot)  // ← TLOAD opcode!
+        }
+    }
+}
+```
+
+**Why assembly?**
+Solidity doesn't have built-in functions for `tstore`/`tload` yet (they're too new!), so we use low-level assembly to access these opcodes directly.
+
+---
+
+## 🎨 Visual: Lock State Using Transient Storage
+
+```
+Transaction Flow:
+═══════════════
+
+1. Transaction Starts
+   ┌─────────────────────────┐
+   │ Transient Storage       │
