@@ -244,3 +244,85 @@ Transaction Flow:
 1. Transaction Starts
    ┌─────────────────────────┐
    │ Transient Storage       │
+   │ IS_UNLOCKED: [empty]    │ ← Starts clean
+   └─────────────────────────┘
+
+2. unlock() is called
+   ┌─────────────────────────┐
+   │ Transient Storage       │
+   │ IS_UNLOCKED: true ✓     │ ← tstore(slot, true)
+   └─────────────────────────┘
+
+3. Do swaps, modify liquidity, etc.
+   ┌─────────────────────────┐
+   │ Transient Storage       │
+   │ IS_UNLOCKED: true ✓     │ ← Still true
+   └─────────────────────────┘
+
+4. lock() is called
+   ┌─────────────────────────┐
+   │ Transient Storage       │
+   │ IS_UNLOCKED: false ✗    │ ← tstore(slot, false)
+   └─────────────────────────┘
+
+5. Transaction Ends
+   ┌─────────────────────────┐
+   │ Transient Storage       │
+   │ [ERASED]                │ ← Everything cleared!
+   └─────────────────────────┘
+
+6. Next Transaction Starts
+   ┌─────────────────────────┐
+   │ Transient Storage       │
+   │ IS_UNLOCKED: [empty]    │ ← Fresh start again!
+   └─────────────────────────┘
+```
+
+---
+
+## 📊 Gas Cost Comparison
+
+Let's say the PoolManager needs to track the unlock state for 1 transaction:
+
+### Using Regular Storage (Old Way)
+```
+Write unlock state:  20,000 gas
+Read unlock state:    2,100 gas
+Write lock state:    20,000 gas
+──────────────────────────────
+TOTAL:               42,100 gas
+```
+
+### Using Transient Storage (New Way)
+```
+Write unlock state:     100 gas
+Read unlock state:      100 gas
+Write lock state:       100 gas
+──────────────────────────────
+TOTAL:                  300 gas
+
+SAVINGS: 99.3% cheaper! 🎉
+```
+
+Now imagine this happens across EVERY transaction in V4. The savings add up FAST!
+
+---
+
+## 🚀 Why Transient Storage is Perfect for V4
+
+### What V4 Needs to Track (Temporarily):
+1. **Is the PoolManager unlocked?**
+   - Only matters during the transaction
+   - Reset at the end
+
+2. **Balance Deltas**
+   - Only matters during the transaction
+   - Settled and reset at the end
+
+3. **Number of Unsettled Currencies**
+   - Only matters during the transaction
+   - Should be zero at the end
+
+4. **Reentrancy Guards**
+   - Only matters during the transaction
+   - Reset at the end
