@@ -530,3 +530,138 @@ This makes hook auditing even more critical!
 **A**: Great comparative question! Let's see how V4 stacks up:
 
 **Uniswap V4 (Hooks)**:
+- Plug-in architecture
+- Permissionless
+- Highly flexible
+- One hook per pool
+
+**Curve (Different pools)**:
+- Custom pool implementations (StableSwap, CryptoSwap, etc.)
+- Each pool type is separate
+- Less flexible, more optimized
+- No arbitrary plugins
+
+**Balancer (Custom pools)**:
+- Custom pool logic
+- More programmable than Curve
+- Requires deploying full pool implementation
+- Heavier weight
+
+**TraderJoe (Liquidity Book)**:
+- Discretized liquidity bins
+- Fixed design, very efficient
+- No customization
+- Different philosophy
+
+**Comparison**:
+```
+Flexibility:     V4 > Balancer > Curve > TraderJoe
+Gas Efficiency:  TraderJoe > Curve > V4 > Balancer
+Ease of Use:     Curve > TraderJoe > V4 > Balancer
+Innovation:      V4 > Balancer > Curve > TraderJoe
+```
+
+**Verdict**: Hooks are somewhat unique in their "plugin" approach. Others use custom pools or fixed designs. V4 is betting on permissionless innovation!
+
+---
+
+### 19. V4 vs V3 Migration
+**Q**: "For existing V3 liquidity providers, is there an easy migration path to V4? Or do they need to manually withdraw and re-deposit?"
+
+**A**: Unfortunately, **manual migration required**. There's no automatic bridge between V3 and V4 positions.
+
+**Migration process**:
+1. Withdraw liquidity from V3 pool
+2. Receive tokens back
+3. Add liquidity to V4 pool
+4. Pay gas for both operations
+
+**Why no automatic migration?**
+- V3 and V4 have different architecture
+- Position NFTs are incompatible
+- Would require complex migration contract
+- Users need to choose which V4 pool (many options now!)
+
+**Helper tools being built**:
+- One-click migration UIs
+- Batched operations to save gas
+- Incentive programs for early migrants
+
+**Analogy**: Moving apartments:
+- **Old apartment**: V3
+- **New apartment**: V4
+- **Moving company**: Tools to help
+- **But you still gotta pack your stuff**: Manual process
+
+**Note**: V3 isn't going anywhere! Many LPs might stay on V3 if they don't need hook features.
+
+---
+
+## 💡 Clarification Questions
+
+### 20. Balance Delta
+**Q**: "I want to make sure I understand balance delta correctly - it's from the USER's perspective, right? So positive means I'm getting tokens, negative means I'm giving tokens?"
+
+**A**: YES! Exactly right! 100% correct understanding.
+
+```
+Balance Delta = Change in user's balance
+
+Positive (+) = User receives tokens
+              (PoolManager owes user)
+
+Negative (-) = User owes tokens
+              (User owes PoolManager)
+
+Example swap: 1 ETH → 1000 USDC
+
+ETH delta:  -1     (User gives 1 ETH)
+USDC delta: +1000  (User gets 1000 USDC)
+```
+
+**After settlement**:
+- Both deltas return to 0
+- User transferred 1 ETH to PM
+- PM transferred 1000 USDC to user
+- Everything balanced!
+
+**Perfect understanding!** This perspective makes the settlement logic much clearer.
+
+---
+
+### 21. Callback Pattern
+**Q**: "The unlock/callback pattern is interesting. Is this similar to the flash loan pattern where you borrow, do stuff, then repay? Just making sure I'm connecting the concepts correctly."
+
+**A**: EXCELLENT connection! Yes, very similar conceptually!
+
+**Flash Loans**:
+```
+1. Borrow tokens (debt created)
+2. Do stuff with tokens
+3. Repay tokens + fee
+4. If not repaid → Transaction reverts
+```
+
+**V4 Unlock/Callback**:
+```
+1. Unlock PM (balance tracking begins)
+2. Do stuff (create balance deltas)
+3. Settle balances
+4. If not settled → Transaction reverts
+```
+
+**Key similarity**:
+- Both create temporary "debt"
+- Both require settlement before transaction ends
+- Both revert if not properly settled
+- Both enable complex operations atomically
+
+**Key difference**:
+- Flash loans: Borrow specific amount upfront
+- V4: Calculate debt as you go
+
+**You're absolutely right!** Flash accounting is like a generalized flash loan system. Great intuition!
+
+---
+
+That's all the answers! You can use these to prepare for potential responses you might hear in class.
