@@ -184,3 +184,96 @@ function afterSwap(...) external returns (bytes4) {
 ### beforeAddLiquidity - Run Code Before Adding Liquidity
 ```solidity
 // Example: Only allow whitelisted LPs
+function beforeAddLiquidity(...) external returns (bytes4) {
+    require(isWhitelisted(msg.sender), "Not whitelisted!");
+    return this.beforeAddLiquidity.selector;
+}
+```
+
+---
+
+## 🎨 Visual: Hook Flow in Action
+
+```
+USER INITIATES SWAP
+        │
+        ▼
+┌───────────────────┐
+│   beforeSwap()    │ ◄── Your custom code runs here!
+└────────┬──────────┘
+         │
+         ▼
+┌───────────────────┐
+│  ACTUAL SWAP      │ ◄── Core Uniswap logic
+│  (Price calc,     │
+│   balance update) │
+└────────┬──────────┘
+         │
+         ▼
+┌───────────────────┐
+│   afterSwap()     │ ◄── Your custom code runs here!
+└────────┬──────────┘
+         │
+         ▼
+  SWAP COMPLETE ✅
+```
+
+---
+
+## 🌟 Real-World Hook Use Cases
+
+### 1. Dynamic Fee Hook
+```
+Problem: Fixed fees don't adapt to market volatility
+
+Hook Solution:
+┌─────────────────────────────────────┐
+│  beforeSwap():                      │
+│  1. Check current market volatility │
+│  2. If high volatility → 0.5% fee   │
+│  3. If low volatility  → 0.1% fee   │
+└─────────────────────────────────────┘
+
+Benefit: Competitive fees that adapt!
+```
+
+### 2. Limit Order Hook
+```
+Problem: Can't buy/sell at specific prices on AMMs
+
+Hook Solution:
+┌─────────────────────────────────────┐
+│  Users place limit orders           │
+│                                     │
+│  beforeSwap():                      │
+│  1. Check if any limit orders       │
+│     can be filled at current price  │
+│  2. Fill those orders first         │
+│  3. Then do the regular swap        │
+└─────────────────────────────────────┘
+
+Benefit: Limit orders on Uniswap!
+```
+
+### 3. MEV Protection Hook
+```
+Problem: Bots can sandwich attack your trades
+
+Hook Solution:
+┌─────────────────────────────────────┐
+│  beforeSwap():                      │
+│  1. Check if swap price deviates    │
+│     too much from oracle price      │
+│  2. If suspicious → Delay swap by   │
+│     one block                       │
+│  3. Prevents front-running          │
+└─────────────────────────────────────┘
+
+Benefit: Safer trading!
+```
+
+### 4. TWAP Oracle Hook
+```
+Problem: Need time-weighted average prices
+
+Hook Solution:
