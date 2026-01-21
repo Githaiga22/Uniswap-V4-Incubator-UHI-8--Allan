@@ -277,3 +277,96 @@ Benefit: Safer trading!
 Problem: Need time-weighted average prices
 
 Hook Solution:
+┌─────────────────────────────────────┐
+│  afterSwap():                       │
+│  1. Record current price            │
+│  2. Update running average          │
+│  3. External contracts can read     │
+│     the TWAP                        │
+└─────────────────────────────────────┘
+
+Benefit: On-chain price feed!
+```
+
+### 5. Loyalty Rewards Hook
+```
+Problem: No incentive for regular traders
+
+Hook Solution:
+┌─────────────────────────────────────┐
+│  afterSwap():                       │
+│  1. Track user's trading volume     │
+│  2. Give points/NFTs to frequent    │
+│     traders                         │
+│  3. Points unlock benefits          │
+└─────────────────────────────────────┘
+
+Benefit: Gamified trading!
+```
+
+---
+
+## 🎨 Visual: One Hook, Multiple Functions
+
+You can implement ANY combination of hooks:
+
+```
+Example: Full-Featured Trading Pool
+
+┌─────────────────────────────────────────────┐
+│       MyAwesomeHook Contract                │
+├─────────────────────────────────────────────┤
+│                                              │
+│  ✓ beforeSwap                               │
+│    → Check if price is reasonable           │
+│                                              │
+│  ✓ afterSwap                                │
+│    → Update TWAP oracle                     │
+│    → Give loyalty points                    │
+│                                              │
+│  ✓ beforeAddLiquidity                       │
+│    → Check if user is whitelisted           │
+│                                              │
+│  ✗ afterAddLiquidity     (not implemented)  │
+│  ✗ beforeRemoveLiquidity (not implemented)  │
+│  ✗ afterRemoveLiquidity  (not implemented)  │
+│                                              │
+└─────────────────────────────────────────────┘
+
+You only implement what you need!
+```
+
+---
+
+## 🔄 beforeX vs afterX Hooks
+
+### When to use `before` hooks:
+- **Validation**: Check if an operation should be allowed
+- **Prerequisites**: Ensure conditions are met
+- **Blocking**: Prevent operations under certain conditions
+
+Example:
+```solidity
+function beforeSwap(...) {
+    require(isNotPaused, "Trading paused!");
+    require(userNotBlacklisted, "You're banned!");
+}
+```
+
+### When to use `after` hooks:
+- **Recording**: Log what happened
+- **Side effects**: Trigger additional actions
+- **Updates**: Update external state based on the operation
+
+Example:
+```solidity
+function afterSwap(...) {
+    recordSwapInDatabase();
+    updateOraclePrice();
+    giveRewardsToUser();
+}
+```
+
+---
+
+## 🎯 Donations - The Special Case
