@@ -235,3 +235,82 @@ STEP 3: WITHDRAW REAL TOKENS
 ### ERC-20 Transfer (External Contract)
 ```
 Steps involved:
+1. Call external contract              (2,100 gas)
+2. Check sender has balance            (2,100 gas)
+3. Check recipient not blacklisted     (varies, could be 20,000+)
+4. Update sender balance               (20,000 gas)
+5. Update recipient balance            (20,000 gas)
+6. Emit Transfer event                 (1,500 gas)
+───────────────────────────────────────
+TOTAL: ~45,000+ gas (minimum)
+
+Note: Custom logic (like USDC blacklist) adds MORE gas!
+```
+
+### ERC-6909 Mint/Burn (Internal)
+```
+Steps involved:
+1. Update balance mapping              (5,000 gas)
+2. Emit event                          (1,500 gas)
+───────────────────────────────────────
+TOTAL: ~6,500 gas
+
+No external calls, no custom logic!
+Constant gas cost regardless of token!
+```
+
+---
+
+## 📊 Who Should Use Claims?
+
+### ✅ Great for Claims:
+```
+High-Frequency Traders:
+├─ Do many swaps in short time
+├─ Want to minimize gas costs
+└─ Can deposit once, trade many times, withdraw once
+
+Market Makers:
+├─ Constantly providing liquidity
+├─ Moving in and out of positions
+└─ Claims reduce friction
+
+Bots:
+├─ Automated trading strategies
+├─ Lots of small trades
+└─ Gas efficiency is crucial
+```
+
+### ❌ Not Necessary for Claims:
+```
+Casual Traders:
+├─ Do a swap once a month
+├─ Don't benefit from claim system
+└─ Just use regular tokens
+
+One-Time Swappers:
+├─ Swap once and leave
+├─ Deposit + withdraw fees negate benefits
+└─ Regular swaps are fine
+```
+
+---
+
+## 💻 ERC-6909 vs ERC-1155
+
+You might have heard of ERC-1155 (used for NFTs). ERC-6909 is similar but simpler:
+
+| Feature | ERC-1155 | ERC-6909 |
+|---------|----------|----------|
+| **Purpose** | NFTs + Semi-Fungible | Fungible tokens only |
+| **Complexity** | High | Low |
+| **Gas Cost** | Higher | Lower |
+| **Batch Transfers** | Yes | Yes |
+| **Use Case** | Gaming, NFTs | DeFi, Trading |
+
+**ERC-6909 = Simplified ERC-1155 optimized for DeFi**
+
+---
+
+## 🎨 Visual: The Full Picture
+
