@@ -109,3 +109,40 @@ After Workshop:
 ☐ Review before next workshop
 ```
 
+---
+
+## 🎓 Quiz Results
+
+```
+Quiz 1: Architecture & Hooks
+Score: ___/5
+Date Taken: _______
+
+Topics to Review:
+□ _________________
+□ _________________
+□ _________________
+```
+
+---
+
+## 💡 Quick Reference
+
+### Singleton Design
+```
+One PoolManager = All pools
+Internal calls = Cheap
+```
+
+### Flash Accounting
+```
+Track deltas → Settle at end
+Multi-hop = Only 2 transfers
+```
+
+### Transient Storage
+```
+TSTORE/TLOAD = 100 gas
+Auto-erases after transaction
+```
+
