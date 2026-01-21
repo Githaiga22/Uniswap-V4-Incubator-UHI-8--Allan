@@ -109,3 +109,40 @@
 **Q**: "The locking mechanism prevents issues when operations are happening, but can hooks create reentrancy vulnerabilities? Or does the lock protect against that?"
 
 **Why this is good**: Shows you understand a classic smart contract vulnerability.
+
+---
+
+## 🚀 Future & Advanced Questions
+
+### 15. Layer 2 Deployment
+**Q**: "V4 is designed for Layer 2 rollups. Are there any specific L2 features that V4 takes advantage of that wouldn't work on L1? Or is it just about lower gas costs?"
+
+**Why this is good**: Shows you're thinking about the broader Ethereum ecosystem.
+
+---
+
+### 16. Cross-Chain Hooks
+**Q**: "Could hooks enable cross-chain functionality? Like, could a hook on one chain trigger actions on another chain, or is that outside the scope of what hooks can do?"
+
+**Why this is good**: Shows you're thinking creatively about possibilities.
+
+---
+
+### 17. Pool Initialization
+**Q**: "When you initialize a pool with a hook, can you ever change the hook later? Or is it permanent once set?"
+
+**Why this is good**: Shows you're thinking about long-term pool management.
+
+---
+
+## 🎨 Comparison Questions
+
+### 18. Other DEXs
+**Q**: "How does Uniswap V4's hook system compare to other DEXs' customization approaches? Are hooks a unique Uniswap innovation, or are other protocols doing similar things?"
+
+**Why this is good**: Shows you're aware of the broader DeFi landscape.
+
+---
+
+### 19. V4 vs V3 Migration
+**Q**: "For existing V3 liquidity providers, is there an easy migration path to V4? Or do they need to manually withdraw and re-deposit?"
