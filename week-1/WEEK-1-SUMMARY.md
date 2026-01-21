@@ -72,3 +72,40 @@ Post-Workshop: ⬜ Practice exercises
 **HookRank.io**: https://hookrank.io/
 - Hook ratings & analytics
 - Security reviews
+- Market data
+
+**PoolManager (Mainnet)**:
+`0x000000000004444c5dc75cb358380d2e3de08a90`
+- Live contract
+- $325M+ TVL
+- 815+ transactions
+
+**Course Platform**:
+https://learn.atrium.academy/course/4b6c25df-f4c8-4b92-ab38-a930284d237e/technical-introduction
+
+---
+
+## ✅ Pre-Workshop Checklist
+
+```
+Before Workshop (11am ET):
+☐ Read all 10 study notes
+☐ Review class questions
+☐ Check HookRank.io
+☐ View PoolManager on Etherscan
+☐ Prepare questions to ask
+☐ Have notebook ready
+
+During Workshop:
+☐ Take additional notes
+☐ Ask prepared questions
+☐ Note any new resources
+☐ Engage with examples
+
+After Workshop:
+☐ Complete quiz
+☐ Practice exercises
+☐ Commit to GitHub
+☐ Review before next workshop
+```
+
