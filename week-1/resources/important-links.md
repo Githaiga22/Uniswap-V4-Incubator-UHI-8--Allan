@@ -81,3 +81,86 @@ Step 2: Look up hook on HookRank.io
    │  Volume: $5M                 │
    │  Success: 98%                │
    │  Gas: Moderate               │
+   │  Reviews: "Works great!"     │
+   └──────────────────────────────┘
+
+Step 3: Make informed decision
+        ↓
+   High rating → Safe to use ✅
+   Low rating  → Avoid! ❌
+```
+
+---
+
+### 📈 Current Hook Market Stats (2026)
+
+As of January 2026, HookRank shows:
+
+```
+Total Hooks Deployed:  24
+Total TVL:            ~$325M+
+Leading Hook:         Flaunch
+  ├─ Launched:        2,135 tokens
+  ├─ Volume:          $75.6M
+  └─ Earnings:        51 ETH returned to creators
+```
+
+---
+
+### 🛡️ Why HookRank Matters for YOU
+
+**Security**: Not all hooks are created equal. Some might have bugs, be poorly optimized, or even be malicious!
+
+**Risk Management**:
+```
+❌ Without HookRank:
+  "This hook looks cool, let me put $10k in!"
+  → Hook fails
+  → You lose money
+
+✅ With HookRank:
+  "Let me check the rating first..."
+  → Rating: 25/100, many failed transactions
+  → "Nope, staying away!"
+  → Money saved!
+```
+
+---
+
+### 💡 What to Look For
+
+When evaluating a hook on HookRank:
+
+1. **Overall Rating > 70**: Generally safe
+2. **Success Rate > 95%**: Reliable
+3. **Transaction Volume**: Higher = more tested
+4. **User Reviews**: Read the experiences
+5. **Gas Costs**: Factor into your trading strategy
+
+---
+
+### 🔗 Related Resources
+
+- **HookRank Documentation**: https://hookrank.gitbook.io/hookrank/
+- **HookRank GitHub**: Check the project showcase
+- **ETHGlobal Showcase**: https://ethglobal.com/showcase/hookrank-ym97n
+
+---
+
+## 🏦 Uniswap V4 PoolManager Contract
+
+**Link**: https://etherscan.io/address/0x000000000004444c5dc75cb358380d2e3de08a90
+
+**Contract Address**: `0x000000000004444c5dc75cb358380d2e3de08a90`
+
+### 🎓 What is This Contract?
+
+**One-line**: This is THE actual Uniswap V4 PoolManager contract deployed on Ethereum mainnet - the singleton contract that manages ALL V4 pools.
+
+**Simple Explanation**:
+Remember how we learned about the singleton design? This is it in real life! This is the actual contract address where all Uniswap V4 magic happens on Ethereum.
+
+```
+┌─────────────────────────────────────────┐
+│  UNISWAP V4 POOL MANAGER                │
+│  (The Brain of Uniswap V4)              │
