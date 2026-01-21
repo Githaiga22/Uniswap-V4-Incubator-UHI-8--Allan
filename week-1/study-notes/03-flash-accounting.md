@@ -330,3 +330,86 @@ Settlement:
 1. Burn 1 ETH claim token (5 → 4)
 2. Mint 1000 USDC claim tokens (0 → 1000)
 
+Result: Delta becomes 0 for both tokens ✅
+(No actual ETH/USDC moved, just claim tokens!)
+```
+
+---
+
+## 🚀 Why This is Revolutionary
+
+### Gas Savings Example
+```
+Swap Route: ETH → USDC → DAI → USDT
+
+V3 (Old):
+Transfer ETH to Pool 1     = 50,000 gas
+Transfer USDC to Pool 2    = 50,000 gas
+Transfer DAI to Pool 3     = 50,000 gas
+Transfer USDT to user      = 50,000 gas
+────────────────────────────────────
+TOTAL:                       200,000 gas
+
+V4 (Flash Accounting):
+Transfer ETH to PoolManager = 50,000 gas
+Math for USDC amount        = 5,000 gas
+Math for DAI amount         = 5,000 gas
+Math for USDT amount        = 5,000 gas
+Transfer USDT to user       = 50,000 gas
+────────────────────────────────────
+TOTAL:                       115,000 gas
+
+SAVINGS: 42.5% less gas! 🎉
+```
+
+---
+
+## 🔗 Resources & Citations
+
+1. **Atrium Academy - V4 Architecture (Flash Accounting)**
+   https://learn.atrium.academy/course/4b6c25df-f4c8-4b92-ab38-a930284d237e/technical-introduction/v4-architecture
+
+2. **Uniswap V4 PoolManager.sol (unlock function)**
+   https://github.com/Uniswap/v4-core/blob/main/src/PoolManager.sol
+
+3. **Understanding Flash Accounting**
+   https://docs.uniswap.org/contracts/v4/concepts/flash-accounting
+
+---
+
+## ✅ Quick Self-Check
+
+1. **What is Flash Accounting?**
+   <details>
+   <summary>Answer</summary>
+   A system that tracks balance changes (debits/credits) during a transaction but only transfers tokens at the very end.
+   </details>
+
+2. **Why do we need the locking mechanism?**
+   <details>
+   <summary>Answer</summary>
+   To ensure all balance deltas are settled (sum to zero) before the transaction completes. If anything is unbalanced, the transaction fails.
+   </details>
+
+3. **What does a positive Balance Delta mean?**
+   <details>
+   <summary>Answer</summary>
+   The user is owed tokens (PoolManager owes the user).
+   </details>
+
+4. **What does a negative Balance Delta mean?**
+   <details>
+   <summary>Answer</summary>
+   The user owes tokens (user owes the PoolManager).
+   </details>
+
+5. **Why is Flash Accounting cheaper than V3?**
+   <details>
+   <summary>Answer</summary>
+   It reduces the number of actual token transfers by only moving tokens at the start and end, not at every intermediate step.
+   </details>
+
+---
+
+**Previous**: [Singleton Design](./02-singleton-design.md)
+**Next**: [Transient Storage (EIP-1153)](./04-transient-storage.md)
