@@ -164,3 +164,86 @@ Step 2:  User calls unlock()
          │  ...                             │
          └─────────────────────────────────┘
 
+Step 3:  Execute operations (swap, add liquidity, etc.)
+         ↓
+         ┌─────────────────────────────────┐
+         │  📋 Balance Delta Ledger:       │
+         │                                  │
+         │  ETH:  -1.0   (user owes)       │
+         │  USDC: +1000  (user gets)       │
+         └─────────────────────────────────┘
+
+Step 4:  Settle balances (transfer tokens)
+         ↓
+         ┌─────────────────────────────────┐
+         │  📋 Balance Delta Ledger:       │
+         │                                  │
+         │  ETH:  0   ✅                    │
+         │  USDC: 0   ✅                    │
+         └─────────────────────────────────┘
+
+Step 5:  Check: All balances = 0?
+         ↓
+      ✅ YES → LOCK vault
+      ❌ NO  → REVERT transaction
+
+         ┌────────────┐
+         │  🔒 LOCKED │  ← Back to secure state
+         └────────────┘
+```
+
+---
+
+## 💻 Code Breakdown: The Unlock Function
+
+```solidity
+function unlock(bytes calldata data) external returns (bytes memory result) {
+    // 1. Safety check: Make sure we're not already unlocked
+    if (Lock.isUnlocked()) revert AlreadyUnlocked();
+
+    // 2. Unlock the PoolManager
+    Lock.unlock();
+
+    // 3. Call back to the caller to do their work
+    //    (This is where swaps, liquidity changes, etc. happen)
+    result = IUnlockCallback(msg.sender).unlockCallback(data);
+
+    // 4. Check that all balances are settled (net zero)
+    if (NonZeroDeltaCount.read() != 0) revert CurrencyNotSettled();
+
+    // 5. Lock the PoolManager again
+    Lock.lock();
+}
+```
+
+**Think of it like a secure door**:
+1. Check door isn't already open
+2. Unlock door
+3. Let person do their business inside
+4. Check they didn't leave a mess (unsettled balances)
+5. Lock door again
+
+---
+
+## 🎨 Visual: Complex Example - Swap with Hook
+
+Let's say a pool has a hook that does a SECOND swap every time a user swaps:
+
+```
+USER                PERIPHERY         POOL MANAGER        HOOK
+  │                     │                    │              │
+  │ 1. Initiate Swap    │                    │              │
+  ├────────────────────→│                    │              │
+  │                     │                    │              │
+  │                     │ 2. unlock()        │              │
+  │                     ├───────────────────→│              │
+  │                     │                    │              │
+  │                     │ 3. unlockCallback()│              │
+  │                     │←───────────────────┤              │
+  │                     │                    │              │
+  │                     │ 4. swap()          │              │
+  │                     ├───────────────────→│              │
+  │                     │                    │              │
+  │                     │                    │ 5. beforeSwap│
+  │                     │                    ├─────────────→│
+  │                     │                    │←─────────────┤
