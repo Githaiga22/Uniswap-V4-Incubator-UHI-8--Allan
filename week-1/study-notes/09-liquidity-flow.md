@@ -434,3 +434,115 @@ If price moves to $1200:
 
 ## 📊 What You Get as an LP
 
+### LP NFT (Position Token)
+```
+┌────────────────────────────────┐
+│  LIQUIDITY POSITION NFT        │
+├────────────────────────────────┤
+│  Pool: ETH/USDC                │
+│  Range: $900 - $1100           │
+│  Liquidity: 100 units          │
+│  Token ID: #12345              │
+│                                │
+│  This NFT represents your      │
+│  share of the pool!            │
+└────────────────────────────────┘
+```
+
+### Fee Earnings
+```
+Every swap in your range earns you fees!
+
+Example:
+• Pool fee: 0.3%
+• Your share of pool: 10%
+• Someone swaps $1000
+• Total fees: $3
+• Your earnings: $0.30
+
+Over time, this adds up!
+```
+
+---
+
+## ⚠️ Impermanent Loss
+
+**One-line**: When price changes, you might have less value than if you just held the tokens.
+
+```
+EXAMPLE:
+═══════
+
+Day 1: Add 1 ETH + 1000 USDC
+  • ETH price: $1000
+  • Total value: $2000
+
+Day 30: ETH price goes to $2000
+  • Your pool position rebalances
+  • You now have: 0.707 ETH + 1414 USDC
+  • Total value: $2828
+
+If you just held:
+  • 1 ETH + 1000 USDC
+  • Total value: $3000
+
+Impermanent Loss: $3000 - $2828 = $172
+
+But you earned fees! Maybe $200 in fees
+Net result: $200 - $172 = +$28 profit!
+```
+
+---
+
+## 🔗 Resources & Citations
+
+1. **Atrium Academy - Liquidity Flow**
+   https://learn.atrium.academy/course/4b6c25df-f4c8-4b92-ab38-a930284d237e/technical-introduction/v4-hooks
+
+2. **Uniswap V4 ModifyLiquidity Function**
+   https://github.com/Uniswap/v4-core/blob/main/src/PoolManager.sol
+
+3. **Understanding Concentrated Liquidity**
+   https://docs.uniswap.org/concepts/protocol/concentrated-liquidity
+
+4. **Impermanent Loss Calculator**
+   https://dailydefi.org/tools/impermanent-loss-calculator/
+
+---
+
+## ✅ Quick Self-Check
+
+1. **What's the difference between adding and removing liquidity?**
+   <details>
+   <summary>Answer</summary>
+   Adding = You provide tokens to pool (liquidityDelta positive). Removing = You take tokens back (liquidityDelta negative).
+   </details>
+
+2. **When do beforeAddLiquidity hooks run?**
+   <details>
+   <summary>Answer</summary>
+   After validation but BEFORE the liquidity is actually added to the pool.
+   </details>
+
+3. **What is an LP NFT?**
+   <details>
+   <summary>Answer</summary>
+   A token that represents your liquidity position in a specific pool and price range.
+   </details>
+
+4. **What happens if you add liquidity outside the current price range?**
+   <details>
+   <summary>Answer</summary>
+   Your liquidity won't be used for swaps until price enters your range. You won't earn fees until then.
+   </details>
+
+5. **How do you earn fees as an LP?**
+   <details>
+   <summary>Answer</summary>
+   Every swap that happens within your price range earns you a proportional share of the swap fees.
+   </details>
+
+---
+
+**Previous**: [Swap Flow](./08-swap-flow.md)
+**Next**: [Common Concerns](./10-common-concerns.md)
