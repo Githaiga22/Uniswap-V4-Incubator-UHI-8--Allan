@@ -326,3 +326,86 @@ Now imagine this happens across EVERY transaction in V4. The savings add up FAST
 4. **Reentrancy Guards**
    - Only matters during the transaction
    - Reset at the end
+
+**None of this needs to persist after the transaction!**
+Using transient storage = MASSIVE gas savings!
+
+---
+
+## 📅 The Waiting Game
+
+**Fun Fact**: Uniswap V4's launch was DELAYED so they could wait for EIP-1153 to be deployed on mainnet!
+
+```
+Timeline:
+─────────────────────────────────────────────────────────→
+
+2022: V4 development starts
+      ↓
+2023: EIP-1153 proposed
+      ↓
+      [V4 waits patiently...]
+      ↓
+March 2024: Cancun Upgrade (EIP-1153 goes live!) 🎉
+      ↓
+2024: V4 launches on mainnet
+```
+
+**Before EIP-1153**: Developers had to use hacky workarounds and custom Solidity compilers to test hooks locally. Not fun!
+
+**After EIP-1153**: Everything just works with the standard Solidity compiler!
+
+---
+
+## 🔗 Resources & Citations
+
+1. **EIP-1153: Transient Storage Opcodes**
+   https://eips.ethereum.org/EIPS/eip-1153
+
+2. **Atrium Academy - Transient Storage Section**
+   https://learn.atrium.academy/course/4b6c25df-f4c8-4b92-ab38-a930284d237e/technical-introduction/v4-architecture
+
+3. **Uniswap V4 Lock Library Code**
+   https://github.com/Uniswap/v4-core/blob/main/src/libraries/Lock.sol
+
+4. **Ethereum Cancun Upgrade (includes EIP-1153)**
+   https://ethereum.org/en/history/#cancun
+
+---
+
+## ✅ Quick Self-Check
+
+1. **What is transient storage?**
+   <details>
+   <summary>Answer</summary>
+   Temporary storage that only exists during a single transaction and gets erased when the transaction ends. It's much cheaper than permanent storage.
+   </details>
+
+2. **What are the two new opcodes introduced by EIP-1153?**
+   <details>
+   <summary>Answer</summary>
+   TSTORE (write to transient storage) and TLOAD (read from transient storage).
+   </details>
+
+3. **Why does V4 use transient storage for the lock status?**
+   <details>
+   <summary>Answer</summary>
+   The lock status only matters during the transaction. It doesn't need to persist afterwards, so transient storage is perfect and saves gas.
+   </details>
+
+4. **How much cheaper is transient storage compared to regular storage?**
+   <details>
+   <summary>Answer</summary>
+   About 99% cheaper! ~100 gas vs ~20,000 gas for writes.
+   </details>
+
+5. **What happens to transient storage data after a transaction ends?**
+   <details>
+   <summary>Answer</summary>
+   It gets completely erased. The next transaction starts with a clean slate.
+   </details>
+
+---
+
+**Previous**: [Flash Accounting](./03-flash-accounting.md)
+**Next**: [ERC-6909 Claims](./05-erc6909-claims.md)
