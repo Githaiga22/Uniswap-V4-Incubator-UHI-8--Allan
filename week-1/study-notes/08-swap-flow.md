@@ -382,3 +382,102 @@ Step 10: Check if balanced
          ↓
 Step 11: Try to settle
 ┌─────────────────────────────────┐
+│ • User transfers 0.5 ETH (OOPS!)│
+│ • Delta ETH: -0.5 (not zero!)   │
+└─────────────────────────────────┘
+         ↓
+Step 12: Lock attempt
+┌─────────────────────────────────┐
+│ if (NonZeroDeltaCount != 0) {   │
+│   revert("Not settled!");       │
+│ }                               │
+└─────────────────────────────────┘
+         ↓
+ENTIRE TRANSACTION REVERTS ❌
+```
+
+---
+
+## 💡 Important Concepts
+
+### 1. Atomicity
+```
+ALL steps happen in ONE transaction
+Either EVERYTHING succeeds or NOTHING does
+No partial swaps!
+
+✅ Good: Swap completes, you get tokens
+❌ Fail: Swap fails, you keep original tokens
+🚫 NEVER: You lose tokens but don't get new ones
+```
+
+### 2. Slippage Protection
+```
+User sets: "I want at least 990 USDC"
+Actual output: 985 USDC
+
+985 < 990 → REVERT
+Protects from price movements during transaction
+```
+
+### 3. Reentrancy Protection
+```
+Lock prevents:
+User → unlock() → swap() → hook tries unlock() again
+                                    ↑
+                              REVERTS HERE!
+
+Can't unlock twice in same transaction
+```
+
+---
+
+## 🔗 Resources & Citations
+
+1. **Atrium Academy - Swap Flow**
+   https://learn.atrium.academy/course/4b6c25df-f4c8-4b92-ab38-a930284d237e/technical-introduction/v4-hooks
+
+2. **Uniswap V4 PoolManager - Swap Function**
+   https://github.com/Uniswap/v4-core/blob/main/src/PoolManager.sol
+
+3. **Understanding Balance Deltas**
+   https://docs.uniswap.org/contracts/v4/concepts/flash-accounting
+
+---
+
+## ✅ Quick Self-Check
+
+1. **What's the first thing that happens when you swap?**
+   <details>
+   <summary>Answer</summary>
+   The periphery contract (SwapRouter) calls unlock() on the PoolManager.
+   </details>
+
+2. **When does beforeSwap hook run?**
+   <details>
+   <summary>Answer</summary>
+   After the swap is validated but BEFORE the actual swap math is executed.
+   </details>
+
+3. **What is BalanceDelta?**
+   <details>
+   <summary>Answer</summary>
+   A record of how much each token balance has changed from the user's perspective. Negative = user owes, Positive = user receives.
+   </details>
+
+4. **Why are multi-hop swaps cheaper in V4?**
+   <details>
+   <summary>Answer</summary>
+   Because intermediate tokens (like USDC in ETH→USDC→DAI) don't actually get transferred - their deltas cancel out.
+   </details>
+
+5. **What happens if balances aren't settled at the end?**
+   <details>
+   <summary>Answer</summary>
+   The entire transaction reverts with a "CurrencyNotSettled" error.
+   </details>
+
+---
+
+**Previous**: [Hook Mechanics](./07-hook-mechanics.md)
+**Next**: [Liquidity Position Modification Flow](./09-liquidity-flow.md)
