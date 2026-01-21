@@ -250,3 +250,70 @@ Savings: 50% fewer transfers! 🎉
 ```
 
 ### 3. **Unified Liquidity Management**
+All pools managed by one contract = easier to build tools, better composability
+
+---
+
+## 🧩 How Libraries Make This Possible
+
+**Library**: A piece of reusable code that doesn't store its own data, but operates on data you give it.
+
+```
+Analogy: Recipe Book vs Kitchen
+
+❌ V3 Approach: Each pool is a full kitchen
+   • Kitchen A: Has recipe book + ingredients + tools
+   • Kitchen B: Has recipe book + ingredients + tools
+   • Kitchen C: Has recipe book + ingredients + tools
+
+✅ V4 Approach: PoolManager is ONE kitchen with a recipe book
+   • Recipe book (Pool library): Shared cooking instructions
+   • Ingredients (Pool.State): Different for each pool
+   • Kitchen (PoolManager): Executes recipes on different ingredients
+```
+
+---
+
+## 🔗 Resources & Citations
+
+1. **Atrium Academy - V4 Architecture**
+   https://learn.atrium.academy/course/4b6c25df-f4c8-4b92-ab38-a930284d237e/technical-introduction/v4-architecture
+
+2. **Uniswap V4 PoolManager Code**
+   https://github.com/Uniswap/v4-core/blob/main/src/PoolManager.sol
+
+3. **Solidity Libraries Documentation**
+   https://docs.soliditylang.org/en/latest/contracts.html#libraries
+
+---
+
+## ✅ Quick Self-Check
+
+1. **What does "singleton" mean in V4?**
+   <details>
+   <summary>Answer</summary>
+   One single PoolManager contract manages all pools, instead of each pool being its own contract.
+   </details>
+
+2. **How does V4 store pool data?**
+   <details>
+   <summary>Answer</summary>
+   As Pool.State structs in a mapping inside the PoolManager contract.
+   </details>
+
+3. **Why are library calls cheaper than external contract calls?**
+   <details>
+   <summary>Answer</summary>
+   Library calls are internal to the contract (like calling your own function), while external calls require leaving the contract and entering another one, which costs more gas.
+   </details>
+
+4. **What's the main benefit of singleton design for multi-hop swaps?**
+   <details>
+   <summary>Answer</summary>
+   You don't need to transfer tokens between different contracts at each step - everything happens inside the PoolManager.
+   </details>
+
+---
+
+**Previous**: [Uniswap V4 Overview](./01-uniswap-v4-overview.md)
+**Next**: [Flash Accounting](./03-flash-accounting.md)
