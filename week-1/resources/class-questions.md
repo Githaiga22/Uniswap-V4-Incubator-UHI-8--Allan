@@ -72,3 +72,40 @@
 **Why this is good**: Shows you understand the tradeoff mentioned in the lesson.
 
 ---
+
+## 💰 Economic & Market Questions
+
+### 10. Hook Economics
+**Q**: "Who pays for the extra gas cost if a hook adds expensive operations? The trader or the LP? And can hook creators charge fees for using their hooks?"
+
+**Why this is good**: Shows you're thinking about incentives and business models.
+
+---
+
+### 11. Dynamic Fees
+**Q**: "For hooks that implement dynamic fees, how quickly can fees adjust? Can they change mid-swap, or are they locked in when the swap starts?"
+
+**Why this is good**: Shows you're thinking about edge cases and atomicity.
+
+---
+
+### 12. MEV Protection
+**Q**: "You mentioned MEV protection as a hook use case. Can you give a concrete example of how a hook would protect against something like a sandwich attack?"
+
+**Why this is good**: Shows you want practical examples of abstract concepts.
+
+---
+
+## 🔐 Security Questions
+
+### 13. Hook Security
+**Q**: "When someone deploys a pool with a custom hook, how can LPs or traders verify that the hook is safe? Is there a standard auditing process, or do people need to trust the hook creator?"
+
+**Why this is good**: Shows you're thinking about trust and security.
+
+---
+
+### 14. Reentrancy
+**Q**: "The locking mechanism prevents issues when operations are happening, but can hooks create reentrancy vulnerabilities? Or does the lock protect against that?"
+
+**Why this is good**: Shows you understand a classic smart contract vulnerability.
