@@ -378,3 +378,100 @@ What happens?
 ## 🔗 Where Are Flags Defined?
 
 All flags are in the Hooks library:
+
+```solidity
+library Hooks {
+    uint256 internal constant BEFORE_INITIALIZE_FLAG = 1 << 14;
+    uint256 internal constant AFTER_INITIALIZE_FLAG = 1 << 13;
+    uint256 internal constant BEFORE_ADD_LIQUIDITY_FLAG = 1 << 12;
+    uint256 internal constant AFTER_ADD_LIQUIDITY_FLAG = 1 << 11;
+    uint256 internal constant BEFORE_REMOVE_LIQUIDITY_FLAG = 1 << 10;
+    uint256 internal constant AFTER_REMOVE_LIQUIDITY_FLAG = 1 << 9;
+    uint256 internal constant BEFORE_SWAP_FLAG = 1 << 8;
+    uint256 internal constant AFTER_SWAP_FLAG = 1 << 7;
+    uint256 internal constant BEFORE_DONATE_FLAG = 1 << 6;
+    uint256 internal constant AFTER_DONATE_FLAG = 1 << 5;
+    uint256 internal constant BEFORE_SWAP_RETURNS_DELTA_FLAG = 1 << 4;
+    uint256 internal constant AFTER_SWAP_RETURNS_DELTA_FLAG = 1 << 3;
+    uint256 internal constant AFTER_ADD_LIQUIDITY_RETURNS_DELTA_FLAG = 1 << 2;
+    uint256 internal constant AFTER_REMOVE_LIQUIDITY_RETURNS_DELTA_FLAG = 1 << 1;
+}
+```
+
+---
+
+## 📊 Why This Design?
+
+### Advantages:
+```
+✅ No storage needed for flags
+✅ Instant checking (no external calls)
+✅ Gas efficient
+✅ Clever and elegant
+✅ Permissionless (anyone can deploy)
+```
+
+### Disadvantages:
+```
+❌ Addresses can lie
+❌ Need to mine correct address
+❌ Can't change hooks after deployment
+❌ Confusing for beginners
+```
+
+**Verdict**: The gas savings and elegance are worth the complexity!
+
+---
+
+## 🔗 Resources & Citations
+
+1. **Atrium Academy - Hook Address Bitmap**
+   https://learn.atrium.academy/course/4b6c25df-f4c8-4b92-ab38-a930284d237e/technical-introduction/v4-hooks
+
+2. **Uniswap V4 Hooks.sol Library**
+   https://github.com/Uniswap/v4-core/blob/main/src/libraries/Hooks.sol
+
+3. **Understanding Bitwise Operations**
+   https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Bitwise_AND
+
+4. **CREATE2 Address Prediction**
+   https://docs.openzeppelin.com/cli/2.8/deploying-with-create2
+
+---
+
+## ✅ Quick Self-Check
+
+1. **What does the hook address bitmap tell us?**
+   <details>
+   <summary>Answer</summary>
+   Which hook functions are implemented in the contract, encoded as bits in the address itself.
+   </details>
+
+2. **How does the PoolManager check if a hook has beforeSwap?**
+   <details>
+   <summary>Answer</summary>
+   It checks if bit 8 of the hook's address is set to 1 using a bitwise AND operation.
+   </details>
+
+3. **What is address mining?**
+   <details>
+   <summary>Answer</summary>
+   The process of trying different deployment salts until you find an address with the correct bits set for your hook functions.
+   </details>
+
+4. **Can an address lie about which functions it has?**
+   <details>
+   <summary>Answer</summary>
+   Yes! An address might have certain bits set but not actually implement those functions. This will cause transactions to revert.
+   </details>
+
+5. **Why use a bitmap instead of storing boolean flags?**
+   <details>
+   <summary>Answer</summary>
+   It's much more gas efficient - no storage reads needed, just check the address bits directly.
+   </details>
+
+---
+
+**Previous**: [Hooks Introduction](./06-hooks-introduction.md)
+**Next**: [Swap Flow](./08-swap-flow.md)
