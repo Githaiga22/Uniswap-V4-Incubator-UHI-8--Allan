@@ -112,3 +112,41 @@ By completing Week 1, I understand:
 | **Customization** | None | Fee tiers only | Unlimited via hooks |
 | **Gas Efficiency** | Baseline | Improved | Optimized |
 | **Multi-hop Swaps** | Multiple transfers | Multiple transfers | Minimal transfers |
+
+---
+
+## Why V4 Matters
+
+### 1. Customization
+Build advanced features:
+- Time-weighted average price (TWAP) oracles
+- Limit orders (specific price execution)
+- Dynamic fees (market-responsive)
+- MEV protection (prevent front-running)
+- On-chain order books
+- Loyalty rewards
+
+### 2. Gas Efficiency
+Fewer operations, lower costs, higher profitability.
+
+### 3. Future-Ready
+Designed for Layer 2 rollups and scaling solutions.
+
+---
+
+## Key Terms
+
+| Term | Definition |
+|------|------------|
+| **DEX** | Decentralized Exchange - trade without intermediaries |
+| **AMM** | Automated Market Maker - mathematical price determination |
+| **Pool** | Collection of two tokens available for trading |
+| **Liquidity** | Total tokens available in a pool |
+| **Singleton** | One contract managing everything |
+| **Hook** | Custom code executing before/after pool actions |
+| **Flash Accounting** | Optimized token tracking minimizing transfers |
+| **Periphery** | Helper contracts for user interaction |
+| **PoolManager** | Central contract managing all V4 pools |
+
+---
+
