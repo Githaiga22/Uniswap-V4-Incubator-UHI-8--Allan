@@ -247,3 +247,86 @@ USER                PERIPHERY         POOL MANAGER        HOOK
   │                     │                    │ 5. beforeSwap│
   │                     │                    ├─────────────→│
   │                     │                    │←─────────────┤
+  │                     │                    │              │
+  │                     │              6. Do swap math      │
+  │                     │              (update ledger)      │
+  │                     │                    │              │
+  │                     │                    │ 7. afterSwap │
+  │                     │                    ├─────────────→│
+  │                     │                    │              │
+  │                     │                    │←─8. swap()───┤
+  │                     │              (Hook does 2nd swap!)│
+  │                     │              9. Do 2nd swap math  │
+  │                     │              (update ledger)      │
+  │                     │                    │              │
+  │                     │                    │ 10. Return───┤
+  │                     │                    │←─────────────┘
+  │                     │                    │
+  │                     │ 11. Return         │
+  │                     │←───────────────────┤
+  │                     │                    │
+  │            12. Settle balances           │
+  │            (transfer tokens)             │
+  │                     │                    │
+  │                     │ 13. callback done  │
+  │                     ├───────────────────→│
+  │                     │                    │
+  │                     │      14. Check balances = 0?
+  │                     │      15. Lock again│
+  │                     │                    │
+  │ 16. Done! ✅        │                    │
+  │←────────────────────┤                    │
+```
+
+**Key Insight**: No matter how complex the operations (even a hook doing another swap), everything is tracked in the ledger and settled at the end!
+
+---
+
+## 📊 Balance Delta Explained
+
+**Balance Delta** = The change in balance from the user's perspective
+
+```
+┌─────────────────────────────────────────┐
+│  BALANCE DELTA                          │
+├─────────────────────────────────────────┤
+│  Token 0: int256                        │
+│  Token 1: int256                        │
+└─────────────────────────────────────────┘
+
+Positive (+) value = User RECEIVES tokens (PoolManager owes user)
+Negative (-) value = User OWES tokens (user owes PoolManager)
+
+Example: Swap 1 ETH for 1000 USDC
+
+Token 0 (ETH):  -1    (User gave 1 ETH)
+Token 1 (USDC): +1000 (User gets 1000 USDC)
+```
+
+---
+
+## 🔄 How Balances are Settled
+
+Two ways to settle:
+
+### Option 1: Actual Token Transfers
+```
+User Balance Delta: ETH: -1, USDC: +1000
+
+Settlement:
+1. User transfers 1 ETH to PoolManager
+2. PoolManager transfers 1000 USDC to user
+
+Result: Delta becomes 0 for both tokens ✅
+```
+
+### Option 2: ERC-6909 Claims (We'll learn more later!)
+```
+User already has 5 ETH deposited (has 5 ETH claim tokens)
+
+User Balance Delta: ETH: -1, USDC: +1000
+
+Settlement:
+1. Burn 1 ETH claim token (5 → 4)
+2. Mint 1000 USDC claim tokens (0 → 1000)
+
