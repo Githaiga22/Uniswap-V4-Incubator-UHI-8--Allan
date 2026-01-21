@@ -146,3 +146,41 @@ TSTORE/TLOAD = 100 gas
 Auto-erases after transaction
 ```
 
+### Hook Address Bitmap
+```
+Address bits = Function flags
+Need mining for correct address
+```
+
+---
+
+## 📅 Next Steps
+
+**This Week**:
+- [ ] Attend Workshop 1 (Today, 11am ET)
+- [ ] Complete quiz
+- [ ] Take additional notes
+- [ ] Commit work to GitHub
+
+**Next Week**:
+- [ ] Workshop 2: Ticks & Q64.96 Numbers (Thu, Jan 22)
+- [ ] Study Q64.96 math
+- [ ] Review tick spacing
+
+---
+
+## 🚀 You're Ready!
+
+```
+Pre-Workshop Prep:  ██████████ 100%
+Understanding:      ████████░░  80%
+Confidence:         ███████░░░  70%
+
+After workshop, these will all be 100%!
+You've got this! 💪
+```
+
+---
+
+**Created**: January 20, 2026
+**Last Updated**: January 20, 2026
