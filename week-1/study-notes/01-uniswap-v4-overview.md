@@ -36,3 +36,41 @@ That's Uniswap V4! Hooks are plugins that customize exchange behavior.
 │  • Vendors set "price ranges" (concentrated liquidity)   │
 │  • Still expensive to establish new stores               │
 └─────────────────────────────────────────────────────────┘
+                        ↓
+┌─────────────────────────────────────────────────────────┐
+│  UNISWAP V4 = Amazon Warehouse                           │
+│  • ONE massive warehouse (PoolManager)                   │
+│  • All products centralized (singleton design)           │
+│  • Custom rules per product (hooks)                      │
+│  • Highly efficient operations (flash accounting)        │
+└─────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Visual: Uniswap V4 Architecture
+
+```
+                    USER INITIATES TOKEN SWAP
+                              |
+                              v
+                    ┌─────────────────┐
+                    │  Swap Router    │ ← Periphery Contract
+                    │  (Interface)    │    (User interaction)
+                    └────────┬────────┘
+                             |
+                    [Unlock & Callback]
+                             |
+                             v
+         ┌───────────────────────────────────────┐
+         │      POOL MANAGER (Singleton)         │
+         │  ═══════════════════════════════════  │
+         │                                        │
+         │  ┌──────┐  ┌──────┐  ┌──────┐        │
+         │  │Pool 1│  │Pool 2│  │Pool 3│ ...    │
+         │  │ETH/  │  │USDC/ │  │DAI/  │        │
+         │  │USDC  │  │DAI   │  │WBTC  │        │
+         │  └───┬──┘  └──┬───┘  └──┬───┘        │
+         │      |         |         |             │
+         │      └─────────┴─────────┘             │
+         │              |                         │
