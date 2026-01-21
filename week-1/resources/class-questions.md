@@ -146,3 +146,44 @@
 
 ### 19. V4 vs V3 Migration
 **Q**: "For existing V3 liquidity providers, is there an easy migration path to V4? Or do they need to manually withdraw and re-deposit?"
+
+**Why this is good**: Shows you're thinking about real-world adoption challenges.
+
+---
+
+## 💡 Clarification Questions (Use if confused)
+
+### 20. Balance Delta
+**Q**: "I want to make sure I understand balance delta correctly - it's from the USER's perspective, right? So positive means I'm getting tokens, negative means I'm giving tokens?"
+
+**Why this is good**: Shows you're trying to clarify, not that you don't understand.
+
+---
+
+### 21. Callback Pattern
+**Q**: "The unlock/callback pattern is interesting. Is this similar to the flash loan pattern where you borrow, do stuff, then repay? Just making sure I'm connecting the concepts correctly."
+
+**Why this is good**: Shows you're trying to relate new concepts to known patterns.
+
+---
+
+## 🎯 Best Practices for Asking
+
+1. **Frame as seeking confirmation**: "Just to make sure I understand..." or "To clarify..."
+2. **Connect to real examples**: "If I wanted to build X, would I...?"
+3. **Ask about tradeoffs**: "What's the downside of...?"
+4. **Be specific**: Instead of "How do hooks work?", ask "When a hook fails, does the entire transaction revert?"
+5. **Acknowledge what you do know**: "I understand X, but I'm wondering about Y..."
+
+---
+
+## ⏰ Question Timing Strategy
+
+- **Early in lesson**: Ask broad conceptual questions (Q7, Q18)
+- **Middle of lesson**: Ask technical clarification questions (Q20, Q21)
+- **Near end**: Ask about practical applications and next steps (Q5, Q19)
+- **After lesson**: Save very advanced questions for office hours or Discord
+
+---
+
+**Remember**: Good questions show you're engaged and thinking critically. Even "basic" questions are valuable if they clarify important concepts!
