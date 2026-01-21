@@ -174,3 +174,48 @@ Deploy with salt 157!
 
 **Why others are wrong**:
 - A: Collision avoidance isn't the goal
+- B: No whitelist requirement
+- C: Gas optimization is a result, not the reason
+
+---
+
+## 📊 Score Summary
+
+```
+Your Score: ___/5
+
+5/5: Hook Master! 🏆
+4/5: Almost there! 🌟
+3/5: Good foundation ✓
+2/5: Review notes 📖
+1/5: Start from basics 📚
+```
+
+---
+
+## 🔑 Key Takeaways
+
+```
+┌─────────────────────────────────┐
+│ V4 Core Innovations:            │
+├─────────────────────────────────┤
+│ Singleton    → Gas savings      │
+│ Flash Acct.  → Fewer transfers  │
+│ Transient    → Cheap temp data  │
+│ Address Bits → Hook detection   │
+│ Mining       → Correct address  │
+└─────────────────────────────────┘
+```
+
+---
+
+## 📚 Need Review?
+
+- **Q1-2 wrong?** → Read `02-singleton-design.md` & `03-flash-accounting.md`
+- **Q3 wrong?** → Read `04-transient-storage.md`
+- **Q4-5 wrong?** → Read `07-hook-mechanics.md`
+
+---
+
+**Completed**: ______ (Date)
+**Review Date**: ______ (Recommend 3 days later)
