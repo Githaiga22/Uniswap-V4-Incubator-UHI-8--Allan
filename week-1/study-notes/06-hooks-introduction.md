@@ -370,3 +370,100 @@ function afterSwap(...) {
 ---
 
 ## 🎯 Donations - The Special Case
+
+**Donation** = Directly tipping liquidity providers
+
+```
+Why donations exist:
+
+Normal fees → Split between LPs + Protocol
+Donations   → Go 100% to LPs
+
+Use case for hooks:
+┌────────────────────────────────────────┐
+│  Custom value distribution:            │
+│                                        │
+│  afterSwap():                          │
+│    → Collect some fee                  │
+│    → donate() to reward LPs           │
+│                                        │
+│  Result: Hook can create custom        │
+│  reward mechanisms for LPs!            │
+└────────────────────────────────────────┘
+```
+
+---
+
+## ⚠️ Important Hook Rules
+
+### 1. Hooks are OPTIONAL
+- Pools can have NO hook (just like V3)
+- Pools with no hooks are cheaper to use
+
+### 2. Hooks are SET AT INITIALIZATION
+- Once a pool is created with a hook, it's permanent
+- Can't change the hook later
+
+### 3. Hooks CAN'T be trusted blindly
+- Anyone can write any hook
+- LPs and traders should verify hook code before using
+
+### 4. Hooks ADD gas costs
+- More code = more gas
+- Complex hooks = expensive trades
+- Simple hooks = minimal overhead
+
+---
+
+## 🔗 Resources & Citations
+
+1. **Atrium Academy - V4 Hooks**
+   https://learn.atrium.academy/course/4b6c25df-f4c8-4b92-ab38-a930284d237e/technical-introduction/v4-hooks
+
+2. **Uniswap V4 Hooks Library**
+   https://github.com/Uniswap/v4-core/blob/main/src/libraries/Hooks.sol
+
+3. **Hook Examples Repository**
+   https://github.com/Uniswap/v4-periphery
+
+4. **React Hooks Documentation (for comparison)**
+   https://react.dev/reference/react
+
+---
+
+## ✅ Quick Self-Check
+
+1. **What are hooks in Uniswap V4?**
+   <details>
+   <summary>Answer</summary>
+   Custom smart contracts that plug into specific points in a pool's lifecycle to add custom behavior and features.
+   </details>
+
+2. **Do you have to implement all 14 hook functions?**
+   <details>
+   <summary>Answer</summary>
+   No! You only implement the ones you need. The rest can be left unimplemented.
+   </details>
+
+3. **What's the difference between beforeSwap and afterSwap?**
+   <details>
+   <summary>Answer</summary>
+   beforeSwap runs BEFORE the swap happens (good for validation/blocking), afterSwap runs AFTER (good for recording/side effects).
+   </details>
+
+4. **Can you change a pool's hook after it's created?**
+   <details>
+   <summary>Answer</summary>
+   No, the hook is set when the pool is initialized and cannot be changed.
+   </details>
+
+5. **Give one real-world use case for hooks.**
+   <details>
+   <summary>Answer</summary>
+   Dynamic fees that adjust based on market volatility, limit orders, MEV protection, loyalty rewards, TWAP oracles, etc.
+   </details>
+
+---
+
+**Previous**: [ERC-6909 Claims](./05-erc6909-claims.md)
+**Next**: [Hook Mechanics (Technical Details)](./07-hook-mechanics.md)
