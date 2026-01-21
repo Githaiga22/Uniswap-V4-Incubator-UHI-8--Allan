@@ -74,3 +74,41 @@ That's Uniswap V4! Hooks are plugins that customize exchange behavior.
          │      |         |         |             │
          │      └─────────┴─────────┘             │
          │              |                         │
+         │      All pools in ONE contract!        │
+         └───────────────┬───────────────────────┘
+                         |
+                [Optional hook calls]
+                         |
+                         v
+                 ┌───────────────┐
+                 │  Hook Contract │ ← Custom Logic
+                 │  (Optional)    │
+                 └───────────────┘
+```
+
+---
+
+## Key Learning Objectives
+
+By completing Week 1, I understand:
+
+- **Singleton Design** - Why all pools exist in one contract
+- **Flash Accounting** - How V4 optimizes token transfers
+- **Locking Mechanism** - How V4 ensures balance correctness
+- **Transient Storage (EIP-1153)** - Cheap temporary memory
+- **ERC-6909 Claims** - Virtual tokens for deposits
+- **Hooks** - Custom plugins for pool behavior
+- **Swap Flow** - Step-by-step transaction process
+- **Balance Delta** - Tracking debits and credits
+
+---
+
+## The Evolution: V2 → V3 → V4
+
+| Feature | V2 | V3 | V4 |
+|---------|----|----|-----|
+| **Liquidity** | Full range only | Concentrated ranges | Concentrated + Hooks |
+| **Architecture** | One pool = One contract | One pool = One contract | All pools = ONE contract |
+| **Customization** | None | Fee tiers only | Unlimited via hooks |
+| **Gas Efficiency** | Baseline | Improved | Optimized |
+| **Multi-hop Swaps** | Multiple transfers | Multiple transfers | Minimal transfers |
