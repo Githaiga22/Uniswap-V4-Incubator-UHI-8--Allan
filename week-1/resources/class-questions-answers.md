@@ -264,3 +264,136 @@ Think of it like toll roads:
 - Allows for slippage protection
 
 **However**, between transactions, fees can change as rapidly as the hook wants:
+- Every block? Yes.
+- Every transaction? Yes.
+- Based on oracle price? Yes.
+
+**Analogy**: Uber surge pricing:
+- When you REQUEST the ride → Price is locked
+- While you're RIDING → Price doesn't change
+- After you FINISH → Next ride might have different price
+
+This is fairer than allowing mid-transaction fee changes!
+
+---
+
+### 12. MEV Protection
+**Q**: "You mentioned MEV protection as a hook use case. Can you give a concrete example of how a hook would protect against something like a sandwich attack?"
+
+**A**: Perfect question! Let me walk through a concrete example.
+
+**Sandwich attack (without protection)**:
+```
+1. Alice wants to swap 10 ETH for USDC
+2. Bot sees Alice's transaction in mempool
+3. Bot front-runs: Buys USDC (price goes up)
+4. Alice's swap executes (at worse price)
+5. Bot back-runs: Sells USDC (profits from price difference)
+6. Alice loses money to bot
+```
+
+**MEV Protection Hook (various strategies)**:
+
+**Strategy 1: Time-weighted delay**
+```solidity
+function beforeSwap(...) {
+    uint256 lastSwapTime = lastSwapTimestamp[user];
+    require(block.timestamp - lastSwapTime > 1 block, "Too soon!");
+    // Forces swap to next block, makes front-running harder
+}
+```
+
+**Strategy 2: Oracle price check**
+```solidity
+function beforeSwap(params) {
+    uint256 poolPrice = getCurrentPrice();
+    uint256 oraclePrice = getChainlinkPrice();
+
+    uint256 deviation = abs(poolPrice - oraclePrice) / oraclePrice;
+    require(deviation < 5%, "Price manipulation detected!");
+    // Rejects swaps during suspicious price movements
+}
+```
+
+**Strategy 3: Batch auctions**
+```solidity
+function beforeSwap(...) {
+    // Collect all swaps for this block
+    // Execute them all at once at a single price
+    // Eliminates ordering advantage
+}
+```
+
+**Real-world analogy**: Airport security lines:
+- **No protection**: First-come, first-served (bots cut in line)
+- **With protection**: Everyone gets a number, served in order (fair)
+
+---
+
+## 🔐 Security Questions
+
+### 13. Hook Security
+**Q**: "When someone deploys a pool with a custom hook, how can LPs or traders verify that the hook is safe? Is there a standard auditing process, or do people need to trust the hook creator?"
+
+**A**: This is THE critical security question. Right now, the ecosystem is developing several solutions:
+
+**Current verification methods**:
+
+1. **Source code verification on Etherscan**
+   - Read the actual code
+   - See what it does
+
+2. **Community audits**
+   - Popular hooks get audited by security firms
+   - Audit reports published
+
+3. **Hook registries**
+   - Curated lists of "safe" hooks
+   - Community vouching systems
+
+4. **Testing tools**
+   - Simulate swaps before executing
+   - See exactly what happens
+
+5. **Reputation systems**
+   - TVL in pool = social proof
+   - Well-known developers get trust
+
+**Future solutions being developed**:
+- Formal verification tools
+- Hook safety scores
+- Insurance protocols
+- Standardized security checks
+
+**Analogy**: Like app stores:
+- **Apple App Store**: Curated, reviewed (not possible with permissionless hooks)
+- **Android**: Anyone can publish, user beware (current V4 state)
+- **Open source community**: Transparency + community review (best we have)
+
+**Rule of thumb**: If you're providing serious liquidity, DYOR (do your own research) or stick to pools with audited hooks and high TVL!
+
+---
+
+### 14. Reentrancy
+**Q**: "The locking mechanism prevents issues when operations are happening, but can hooks create reentrancy vulnerabilities? Or does the lock protect against that?"
+
+**A**: Excellent security awareness! This is nuanced:
+
+**The lock DOES help**, but doesn't fully prevent reentrancy. Here's why:
+
+**What the lock prevents**:
+```
+❌ Can't do this:
+unlock() → swap() → hook calls unlock() again → REVERTS
+```
+
+**What the lock doesn't prevent**:
+```
+⚠️  Can still do this:
+unlock() → swap() → hook calls external contract → external calls back into PM
+
+This is called "read-only reentrancy" or "cross-function reentrancy"
+```
+
+**Hook developers must**:
+- Use reentrancy guards in their own hooks
