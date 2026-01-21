@@ -1,0 +1,96 @@
+# Swap Flow - Complete Transaction Walkthrough
+
+**Date**: January 20, 2026 (Week 1 - Day 1)
+
+---
+
+## 🎓 What is a Swap Flow?
+
+**One-line**: The step-by-step process of what happens when you trade one token for another in Uniswap V4.
+
+**Simple Explanation**:
+Think of ordering food delivery:
+1. You open the app (connect to periphery)
+2. Place your order (initiate swap)
+3. Restaurant gets notification (beforeSwap hook)
+4. Restaurant cooks food (actual swap logic)
+5. Restaurant updates inventory (afterSwap hook)
+6. Delivery driver brings food (settle balances)
+7. You receive food (transaction complete!)
+
+Each step has to happen in order, just like a V4 swap!
+
+---
+
+## 🎨 Visual: The Big Picture
+
+```
+┌──────────┐         ┌─────────────┐         ┌──────────────┐
+│   USER   │────────→│ SWAP ROUTER │────────→│ POOL MANAGER │
+│          │         │ (Periphery) │         │ (Singleton)  │
+└──────────┘         └─────────────┘         └───────┬──────┘
+                                                     │
+                                                     │ (May call)
+                                                     ↓
+                                             ┌───────────────┐
+                                             │ HOOK CONTRACT │
+                                             │ (If enabled)  │
+                                             └───────────────┘
+
+FLOW:
+User → Periphery → PoolManager → Hook → Back to PoolManager
+                                       → Back to Periphery
+                                       → Back to User
+```
+
+---
+
+## 📝 Complete Swap Flow (No Hooks)
+
+Let's start simple - a swap WITHOUT hooks:
+
+```
+SWAP: 1 ETH → ??? USDC
+═══════════════════════
+
+Step 1: User calls SwapRouter
+┌─────────────────────────────────┐
+│ swapRouter.swap({               │
+│   tokenIn: ETH,                 │
+│   tokenOut: USDC,               │
+│   amountIn: 1 ETH               │
+│ })                              │
+└─────────────────────────────────┘
+         │
+         ↓
+
+Step 2: SwapRouter unlocks PoolManager
+┌─────────────────────────────────┐
+│ poolManager.unlock(data)        │
+│                                 │
+│ • PoolManager unlocks           │
+│ • Calls unlockCallback()        │
+└─────────────────────────────────┘
+         │
+         ↓
+
+Step 3: Inside unlockCallback
+┌─────────────────────────────────┐
+│ poolManager.swap(params)        │
+│                                 │
+│ • Validates pool exists         │
+│ • Validates pool is initialized │
+└─────────────────────────────────┘
+         │
+         ↓
+
+Step 4: Execute swap math
+┌─────────────────────────────────┐
+│ • Calculate price impact        │
+│ • Update pool reserves          │
+│ • Calculate output amount       │
+│ • Result: 1000 USDC             │
+└─────────────────────────────────┘
+         │
+         ↓
+
