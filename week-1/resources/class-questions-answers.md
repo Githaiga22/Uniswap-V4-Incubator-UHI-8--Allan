@@ -397,3 +397,136 @@ This is called "read-only reentrancy" or "cross-function reentrancy"
 
 **Hook developers must**:
 - Use reentrancy guards in their own hooks
+- Be careful calling external contracts
+- Follow checks-effects-interactions pattern
+
+**Analogy**: Bank vault:
+- **Lock prevents**: Two people opening the same vault simultaneously
+- **Lock doesn't prevent**: Person inside vault calling their friend to come in through the back door
+
+Later in the course, we'll learn best practices for writing secure hooks!
+
+---
+
+## 🚀 Future & Advanced Questions
+
+### 15. Layer 2 Deployment
+**Q**: "V4 is designed for Layer 2 rollups. Are there any specific L2 features that V4 takes advantage of that wouldn't work on L1? Or is it just about lower gas costs?"
+
+**A**: Great forward-thinking question! It's primarily about gas costs, but there are some L2-specific considerations:
+
+**Why V4 loves L2**:
+
+1. **Gas costs**: The main reason
+   - L1: 0.5% fee might not cover gas
+   - L2: 0.1% fee easily covers gas
+
+2. **Block times**: Some L2s have faster blocks
+   - Enables faster oracle updates in hooks
+   - Quicker MEV protection mechanisms
+
+3. **Custom opcodes**: Some L2s add new features
+   - Could enable even more powerful hooks
+   - Future innovation potential
+
+4. **Preconfirmations**: Some L2s offer this
+   - Reduces MEV risk naturally
+   - Makes hooks simpler
+
+**However**:
+- V4 works perfectly on L1 too
+- Core design is chain-agnostic
+- Just more economical on L2
+
+**Analogy**: Electric cars
+- **Work on any road**: But highways (L2) are most efficient
+- **City streets (L1)**: Lots of stops, less efficient
+- **Highway (L2)**: Smooth sailing, maximum efficiency
+
+---
+
+### 16. Cross-Chain Hooks
+**Q**: "Could hooks enable cross-chain functionality? Like, could a hook on one chain trigger actions on another chain, or is that outside the scope of what hooks can do?"
+
+**A**: Ooh, creative thinking! Hooks CAN integrate with cross-chain messaging, but with limitations:
+
+**What's possible**:
+```solidity
+function afterSwap(...) {
+    // Send cross-chain message via LayerZero/Wormhole/etc
+    sendMessageToOtherChain("Swap happened!", targetChain);
+}
+```
+
+**Limitations**:
+- **Asynchronous**: Message takes time to arrive
+- **No atomic guarantees**: Can't rollback if remote chain fails
+- **Gas costs**: Messaging is expensive
+- **Complexity**: Much harder to reason about
+
+**Practical use cases**:
+1. **Bridge integration**: Hook triggers bridge transfer
+2. **Cross-chain notifications**: Alert other chains about activity
+3. **Multi-chain positions**: Coordinate liquidity across chains
+
+**What's NOT possible**:
+- Atomic cross-chain swaps (without special infrastructure)
+- Instant cross-chain state reads
+- True composability across chains
+
+**Analogy**: International phone calls:
+- **You can call**: Yes, possible
+- **Instant communication**: No, there's lag
+- **Guaranteed delivery**: No, might fail
+- **Atomic transactions**: No, can't undo after sent
+
+Exciting area for future innovation though!
+
+---
+
+### 17. Pool Initialization
+**Q**: "When you initialize a pool with a hook, can you ever change the hook later? Or is it permanent once set?"
+
+**A**: Simple answer: **Permanent! Cannot be changed.**
+
+Once a pool is initialized:
+```
+Pool ID = hash(token0, token1, fee, tickSpacing, hook)
+
+This ID is IMMUTABLE.
+Hook address is part of the pool's identity.
+```
+
+**Why?**
+- **Security**: Prevents rug pulls (changing hook to malicious one)
+- **Predictability**: LPs know what they're signing up for
+- **Trust**: No surprises after deployment
+
+**But what if hook has a bug?**
+- You'd have to:
+  1. Create a NEW pool with fixed hook
+  2. Migrate liquidity (LPs must manually move)
+  3. Convince users to use new pool
+
+**Implications**:
+- Get it right the first time!
+- Thorough testing is crucial
+- Consider upgradeable hooks (advanced pattern we'll cover later)
+
+**Analogy**: Marriage:
+- **Dating**: Can change partners (V3 → V4)
+- **Married**: Committed for life (pool + hook)
+- **Divorce**: Have to start over completely (new pool)
+
+This makes hook auditing even more critical!
+
+---
+
+## 🎨 Comparison Questions
+
+### 18. Other DEXs
+**Q**: "How does Uniswap V4's hook system compare to other DEXs' customization approaches? Are hooks a unique Uniswap innovation, or are other protocols doing similar things?"
+
+**A**: Great comparative question! Let's see how V4 stacks up:
+
+**Uniswap V4 (Hooks)**:
