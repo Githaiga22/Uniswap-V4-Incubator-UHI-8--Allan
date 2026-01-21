@@ -164,3 +164,86 @@ Remember how we learned about the singleton design? This is it in real life! Thi
 ┌─────────────────────────────────────────┐
 │  UNISWAP V4 POOL MANAGER                │
 │  (The Brain of Uniswap V4)              │
+├─────────────────────────────────────────┤
+│                                          │
+│  Address:                                │
+│  0x000000000004444c5dc75cb358380d2e3de08a90 │
+│                                          │
+│  Manages:                                │
+│  • ALL V4 pools                          │
+│  • ALL swaps                             │
+│  • ALL liquidity operations              │
+│                                          │
+│  Holdings (as of Jan 2026):              │
+│  💰 38,473.73 ETH (~$115M)               │
+│  💰 232+ different ERC-20 tokens         │
+│  💰 Total value: ~$325M+                 │
+└─────────────────────────────────────────┘
+```
+
+---
+
+### 📊 Contract Statistics
+
+```
+┌─────────────────────────────────────┐
+│  POOL MANAGER STATS                 │
+├─────────────────────────────────────┤
+│  Age: ~1 year (deployed 2024)       │
+│  Transactions: 815+                 │
+│  Total Value: $325M+ across chains  │
+│  Unique Tokens: 232+                │
+│                                     │
+│  Major Holdings:                    │
+│  • WETH (Wrapped Ethereum)          │
+│  • USDC (USD Coin)                  │
+│  • USDT (Tether)                    │
+│  • WBTC (Wrapped Bitcoin)           │
+│  • + 228 more tokens                │
+└─────────────────────────────────────┘
+```
+
+---
+
+### 🎨 Visual: What You Can Do With This Link
+
+```
+EXPLORING THE POOL MANAGER ON ETHERSCAN
+═══════════════════════════════════════
+
+1. See Real-Time Holdings
+   ┌──────────────────────────┐
+   │ Current ETH balance      │
+   │ All token balances       │
+   │ Total value locked       │
+   └──────────────────────────┘
+
+2. Track All Transactions
+   ┌──────────────────────────┐
+   │ Recent swaps             │
+   │ Pool initializations     │
+   │ Liquidity additions      │
+   └──────────────────────────┘
+
+3. Read Contract Code
+   ┌──────────────────────────┐
+   │ View verified source     │
+   │ Understand the logic     │
+   │ Check for security       │
+   └──────────────────────────┘
+
+4. Interact with Contract (Advanced)
+   ┌──────────────────────────┐
+   │ Call read functions      │
+   │ Check pool states        │
+   │ Query balances           │
+   └──────────────────────────┘
+```
+
+---
+
+### 🔍 Why This Address is Important
+
+1. **Learning**: You can see real V4 transactions happening live!
+2. **Verification**: Confirm the official contract address
+3. **Analysis**: Study how the PoolManager actually works
