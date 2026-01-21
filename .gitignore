@@ -1,0 +1,23 @@
+# Python scripts
+*.py
+
+# Shell scripts
+*.sh
+
+# Temporary files
+*.tmp
+*.bak
+/tmp/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Node modules (if added later)
+node_modules/
