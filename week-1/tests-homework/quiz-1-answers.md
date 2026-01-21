@@ -86,3 +86,47 @@ Step 3: Transfer DAI
 
 ### Why?
 
+```
+Storage Types:
+
+Permanent Storage:
+Write: 20,000 gas
+Read:   2,100 gas
+Persists: Forever ✓
+
+Transient Storage:
+Write:    100 gas ✓✓✓
+Read:     100 gas ✓✓✓
+Persists: One transaction only
+
+Perfect for temporary flags!
+```
+
+**Explanation**: EIP-1153 added TSTORE/TLOAD opcodes for cheap temporary storage. V4 uses it to track locks and deltas during a transaction, then auto-erases after.
+
+**Why others are wrong**:
+- A: EIP-3074 is about account abstraction
+- B: EIP-4337 is also account abstraction
+- D: EIP-721 is NFT standard
+
+---
+
+## Question 4: Hook Function Detection
+
+**How does Uniswap v4 determine which hook functions a contract implements?**
+
+### ✅ Answer: C - From bit flags encoded in the hook's contract address
+
+### Why?
+
+```
+Hook Address: 0x...01E0
+
+Binary: ...0001 1110 0000
+               ││││
+               │││└─ Bit 5: afterDonate ✓
+               ││└── Bit 7: afterSwap ✓
+               │└─── Bit 8: beforeSwap ✓
+               └──── Bit 9: (not set)
+
+Address = Capability Map!
