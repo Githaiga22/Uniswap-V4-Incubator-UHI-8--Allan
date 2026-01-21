@@ -77,3 +77,82 @@ Benefits:
 ✅ One exchange at entrance (one gas fee)
 ✅ Fast gameplay (internal accounting)
 ✅ One exchange at exit (one gas fee)
+```
+
+---
+
+## 🎨 Visual: ERC-20 vs ERC-6909
+
+### Traditional ERC-20 (Each token = separate contract)
+```
+┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+│  ETH Token  │    │ USDC Token  │    │  DAI Token  │
+│  Contract   │    │  Contract   │    │  Contract   │
+├─────────────┤    ├─────────────┤    ├─────────────┤
+│ balanceOf() │    │ balanceOf() │    │ balanceOf() │
+│ transfer()  │    │ transfer()  │    │ transfer()  │
+└─────────────┘    └─────────────┘    └─────────────┘
+      │                   │                   │
+      └───────────────────┴───────────────────┘
+                          │
+                    External Calls
+                  (Expensive! ❌)
+```
+
+### ERC-6909 (One contract manages ALL tokens)
+```
+┌─────────────────────────────────────────────────────┐
+│          POOL MANAGER (ERC-6909)                    │
+├─────────────────────────────────────────────────────┤
+│                                                      │
+│  balances[user][ETH] = 100                          │
+│  balances[user][USDC] = 5000                        │
+│  balances[user][DAI] = 2000                         │
+│  balances[user][WBTC] = 0.5                         │
+│                                                      │
+│  All managed in ONE contract!                       │
+│  Internal accounting = Cheap! ✅                     │
+└─────────────────────────────────────────────────────┘
+```
+
+---
+
+## 💡 How Claims Work: Step-by-Step
+
+### Scenario: High-Frequency Trader Doing Multiple Swaps
+
+#### Without Claims (Old Way)
+```
+Transaction 1: Swap ETH for USDC
+  1. Transfer 1 ETH to PoolManager     (50,000 gas)
+  2. Calculate swap
+  3. Transfer 1000 USDC to user        (50,000 gas)
+  Total: ~100,000 gas
+
+Transaction 2: Swap USDC for DAI
+  1. Transfer 1000 USDC to PoolManager (50,000 gas)
+  2. Calculate swap
+  3. Transfer 1000 DAI to user         (50,000 gas)
+  Total: ~100,000 gas
+
+Transaction 3: Swap DAI for ETH
+  1. Transfer 1000 DAI to PoolManager  (50,000 gas)
+  2. Calculate swap
+  3. Transfer 1 ETH to user            (50,000 gas)
+  Total: ~100,000 gas
+
+═══════════════════════════════════════
+GRAND TOTAL: ~300,000 gas
+```
+
+#### With Claims (New Way)
+```
+One-Time Setup: Deposit ETH
+  1. Transfer 10 ETH to PoolManager    (50,000 gas)
+  2. Mint 10 ETH claim tokens          (5,000 gas)
+  Total: ~55,000 gas
+
+Transaction 1: Swap ETH Claims for USDC Claims
+  1. Burn 1 ETH claim token            (5,000 gas)
+  2. Calculate swap
+  3. Mint 1000 USDC claim tokens       (5,000 gas)
