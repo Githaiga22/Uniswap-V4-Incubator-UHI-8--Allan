@@ -283,3 +283,98 @@ address = hash(deployer, nonce)
 ```
 
 **Solution**: Try many times until you get a lucky address!
+
+### Mining Process
+```
+1. Generate a deployment transaction
+2. Calculate what address it would deploy to
+3. Check if address has correct bits
+4. If YES → Deploy!
+   If NO → Change salt/nonce and try again
+```
+
+### Example Mining Loop
+```solidity
+for (uint256 salt = 0; salt < type(uint256).max; salt++) {
+    address predictedAddress = computeAddress(bytecode, salt);
+
+    if (hasCorrectFlags(predictedAddress)) {
+        // Found it! Deploy with this salt
+        deploy(bytecode, salt);
+        break;
+    }
+}
+```
+
+**How long does it take?**
+- For a few flags: Seconds to minutes
+- For many flags: Could be hours!
+- For ALL flags: Astronomically unlikely
+
+---
+
+## 🎨 Visual: The Mining Process
+
+```
+MINING FOR CORRECT ADDRESS
+═══════════════════════════
+
+Want: beforeSwap + afterSwap (bits 7 & 8 set)
+
+Try 1: salt = 0x0001
+  ↓
+  Predicted address: 0x...1234
+  Binary: ...0001 0011 0100
+  Bits 7&8: 00 ❌
+  Keep trying...
+
+Try 2: salt = 0x0002
+  ↓
+  Predicted address: 0x...5678
+  Binary: ...0101 0110 1000
+  Bits 7&8: 01 ❌
+  Keep trying...
+
+...
+
+Try 157: salt = 0x009D
+  ↓
+  Predicted address: 0x...01E0
+  Binary: ...0001 1110 0000
+  Bits 7&8: 11 ✅
+  FOUND IT! Deploy with salt 0x009D!
+```
+
+---
+
+## ⚠️ Important: Addresses Can Lie!
+
+**Problem**: An address might CLAIM to have a function (bit set to 1) but actually doesn't implement it.
+
+```
+Address: 0x...01E0
+Binary bits show: beforeSwap = 1 ✅
+
+But actual contract:
+contract BadHook {
+    // Oops! Forgot to implement beforeSwap!
+}
+
+What happens?
+→ PoolManager tries to call beforeSwap()
+→ Function doesn't exist
+→ Transaction REVERTS
+→ Pool is unusable!
+```
+
+**Protection**:
+1. **Test thoroughly** before deploying to mainnet
+2. **Verify** address bits match implementation
+3. **Community review** of popular hooks
+4. Users avoid suspicious hooks
+
+---
+
+## 🔗 Where Are Flags Defined?
+
+All flags are in the Hooks library:
