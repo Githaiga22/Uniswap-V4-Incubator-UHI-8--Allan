@@ -91,3 +91,96 @@ function MyComponent() {
     }, [data]);
 
     return <div>{data}</div>;
+}
+```
+
+**React hooks let you "plug into" different points of a component's lifecycle.**
+
+### Uniswap Hooks (Smart Contracts)
+```solidity
+contract MyHook {
+    // Hook into pool lifecycle
+
+    // Hook: Run code BEFORE a swap
+    function beforeSwap(...) external {
+        // Custom logic here
+    }
+
+    // Hook: Run code AFTER a swap
+    function afterSwap(...) external {
+        // Custom logic here
+    }
+
+    // Hook: Run code BEFORE adding liquidity
+    function beforeAddLiquidity(...) external {
+        // Custom logic here
+    }
+}
+```
+
+**Uniswap hooks let you "plug into" different points of a pool's operations.**
+
+---
+
+## 🎯 All Available Hook Functions
+
+V4 gives you 14 different "plugin points":
+
+```
+┌─────────────────────────────────────────────────────┐
+│  POOL LIFECYCLE HOOKS                               │
+├─────────────────────────────────────────────────────┤
+│                                                      │
+│  INITIALIZATION (Pool Setup)                        │
+│  ├─ beforeInitialize   → Before pool is created     │
+│  └─ afterInitialize    → After pool is created      │
+│                                                      │
+│  SWAPS (Trading)                                    │
+│  ├─ beforeSwap         → Before any swap            │
+│  ├─ afterSwap          → After any swap             │
+│  ├─ beforeSwapReturnDelta → Advanced swap control   │
+│  └─ afterSwapReturnDelta  → Advanced swap control   │
+│                                                      │
+│  LIQUIDITY (Adding/Removing)                        │
+│  ├─ beforeAddLiquidity       → Before adding LP     │
+│  ├─ afterAddLiquidity        → After adding LP      │
+│  ├─ beforeRemoveLiquidity    → Before removing LP   │
+│  ├─ afterRemoveLiquidity     → After removing LP    │
+│  ├─ afterAddLiquidityReturnDelta → Advanced LP     │
+│  └─ afterRemoveLiquidityReturnDelta → Advanced LP  │
+│                                                      │
+│  DONATIONS (Tipping LPs)                            │
+│  ├─ beforeDonate       → Before donation            │
+│  └─ afterDonate        → After donation             │
+└─────────────────────────────────────────────────────┘
+```
+
+**You don't need to implement ALL of them!** Pick only what you need.
+
+---
+
+## 💡 Hook Function Examples
+
+### beforeSwap - Run Code Before a Swap
+```solidity
+// Example: Block swaps during weekends
+function beforeSwap(...) external returns (bytes4) {
+    if (isWeekend()) {
+        revert("No trading on weekends!");
+    }
+    return this.beforeSwap.selector;
+}
+```
+
+### afterSwap - Run Code After a Swap
+```solidity
+// Example: Reward the trader with loyalty points
+function afterSwap(...) external returns (bytes4) {
+    giveRewards(msg.sender, 100);
+    return this.afterSwap.selector;
+}
+```
+
+### beforeAddLiquidity - Run Code Before Adding Liquidity
+```solidity
+// Example: Only allow whitelisted LPs
