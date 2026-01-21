@@ -314,3 +314,83 @@ You might have heard of ERC-1155 (used for NFTs). ERC-6909 is similar but simple
 
 ## 🎨 Visual: The Full Picture
 
+```
+                    UNISWAP V4 ECOSYSTEM
+    ┌─────────────────────────────────────────────────┐
+    │                                                  │
+    │  Regular Users                High-Freq Traders │
+    │       │                              │          │
+    │       v                              v          │
+    │  ┌──────────┐                  ┌──────────┐    │
+    │  │ Use Real │                  │Use Claims│    │
+    │  │ Tokens   │                  │ Tokens   │    │
+    │  └────┬─────┘                  └─────┬────┘    │
+    │       │                              │          │
+    │       └──────────────┬───────────────┘          │
+    │                      │                          │
+    │                      v                          │
+    │         ┌─────────────────────────┐             │
+    │         │    POOL MANAGER         │             │
+    │         │                         │             │
+    │         │  • Handles both!        │             │
+    │         │  • You choose which     │             │
+    │         │    works best for you   │             │
+    │         └─────────────────────────┘             │
+    │                                                  │
+    └─────────────────────────────────────────────────┘
+```
+
+---
+
+## 🔗 Resources & Citations
+
+1. **ERC-6909 Specification**
+   https://eips.ethereum.org/EIPS/eip-6909
+
+2. **Atrium Academy - ERC-6909 Claims**
+   https://learn.atrium.academy/course/4b6c25df-f4c8-4b92-ab38-a930284d237e/technical-introduction/v4-architecture
+
+3. **Uniswap V4 Claims Implementation**
+   https://github.com/Uniswap/v4-core/blob/main/src/ERC6909Claims.sol
+
+4. **ERC-1155 vs ERC-6909 Comparison**
+   https://ethereum.org/en/developers/docs/standards/tokens/
+
+---
+
+## ✅ Quick Self-Check
+
+1. **What are claim tokens?**
+   <details>
+   <summary>Answer</summary>
+   ERC-6909 tokens that represent your deposited assets in the PoolManager. Like a receipt or IOU for your real tokens.
+   </details>
+
+2. **Why are claims cheaper than transferring real tokens?**
+   <details>
+   <summary>Answer</summary>
+   Minting/burning claim tokens happens inside the PoolManager (internal operations), while transferring real tokens requires external contract calls which are more expensive.
+   </details>
+
+3. **Who benefits most from using claims?**
+   <details>
+   <summary>Answer</summary>
+   High-frequency traders, market makers, and bots who do many trades in a short time period.
+   </details>
+
+4. **Do you HAVE to use claims to trade on V4?**
+   <details>
+   <summary>Answer</summary>
+   No! You can still trade using regular tokens. Claims are optional for users who want extra gas efficiency.
+   </details>
+
+5. **What's the difference between ERC-6909 and ERC-1155?**
+   <details>
+   <summary>Answer</summary>
+   ERC-6909 is a simplified version focused on fungible tokens for DeFi, while ERC-1155 is more complex and designed for NFTs and gaming.
+   </details>
+
+---
+
+**Previous**: [Transient Storage](./04-transient-storage.md)
+**Next**: [Hooks Introduction](./06-hooks-introduction.md)
