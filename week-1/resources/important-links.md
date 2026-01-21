@@ -330,3 +330,88 @@ DON'T:
 ---
 
 ### 🔐 Security Verification
+
+**Official Address Confirmation**:
+- Check against Uniswap docs
+- Verify on multiple sources
+- Match with v4-core deployment scripts
+
+**Why the weird address?**
+```
+0x000000000004444c5dc75cb358380d2e3de08a90
+  ^^^^^^^^
+  Leading zeros!
+
+This is intentional - deployed using CREATE2
+with a specific salt to get a "vanity address"
+(looks cool and is easy to recognize!)
+```
+
+---
+
+### 📚 What You Can Learn
+
+By studying this contract:
+
+1. **Architecture**: See singleton design in action
+2. **Gas patterns**: Understand transaction costs
+3. **Pool distribution**: Which pools are most popular
+4. **Hook usage**: See which hooks are deployed
+5. **Market behavior**: Trading patterns and volumes
+
+---
+
+## 🌐 Additional Important Resources
+
+### Official Uniswap Resources
+- **Uniswap V4 Docs**: https://docs.uniswap.org/contracts/v4/
+- **V4 Core GitHub**: https://github.com/Uniswap/v4-core
+- **V4 Periphery GitHub**: https://github.com/Uniswap/v4-periphery
+
+### Learning Platforms
+- **Atrium Academy**: https://learn.atrium.academy/
+- **Cyfrin Updraft**: https://updraft.cyfrin.io/
+- **LearnWeb3**: https://learnweb3.io/
+
+### Hook Development
+- **Awesome Uniswap Hooks**: https://github.com/fewwwww/awesome-uniswap-hooks
+- **Hook Examples**: https://github.com/johnsonstephan/awesome-uniswap-v4-hooks
+- **Hook Templates**: Various templates in v4-periphery repo
+
+### Security
+- **Hook Security Guide**: https://www.cyfrin.io/blog/uniswap-v4-hooks-security-deep-dive
+- **Hacken Audit Guide**: https://hacken.io/discover/auditing-uniswap-v4-hooks/
+- **QuillAudits Security**: https://www.quillaudits.com/research/uniswap-development/uniswap-v4/
+
+---
+
+## 📝 Quick Reference
+
+**When researching a hook**:
+1. Check HookRank.io for ratings
+2. Verify code on Etherscan
+3. Read community reviews
+4. Test on testnet first!
+
+**When developing a hook**:
+1. Study PoolManager contract
+2. Reference hook examples
+3. Read security guides
+4. Use HookRank for inspiration
+
+---
+
+**Last Updated**: January 20, 2026
+
+---
+
+## Sources
+
+- [HookRank Official Website](https://hookrank.io/)
+- [HookRank on ETHGlobal](https://ethglobal.com/showcase/hookrank-ym97n)
+- [HookRank Documentation](https://hookrank.gitbook.io/hookrank/)
+- [Uniswap V4 PoolManager on Etherscan](https://etherscan.io/address/0x000000000004444c5dc75cb358380d2e3de08a90)
+- [Awesome Uniswap Hooks GitHub](https://github.com/fewwwww/awesome-uniswap-hooks)
+- [Uniswap V4 Official Documentation](https://docs.uniswap.org/contracts/v4/concepts/hooks)
+- [Cyfrin Hook Security Guide](https://www.cyfrin.io/blog/uniswap-v4-hooks-security-deep-dive)
+- [Hacken V4 Auditing Guide](https://hacken.io/discover/auditing-uniswap-v4-hooks/)
