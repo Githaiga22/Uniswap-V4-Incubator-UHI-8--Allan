@@ -187,3 +187,66 @@ Pool.State Folder:
 ```
 
 In V3, each pool contract had these as storage variables.
+In V4, they're all packed into a struct stored in the PoolManager.
+
+---
+
+## 🎨 Visual: How Pool Data is Accessed
+
+### V3 - External Contract Calls
+```
+User → SwapRouter → Pool Contract (0xABC...)
+                     ↓
+                  pool.slot0()  ← External call
+                  pool.swap()   ← External call
+
+External calls = More gas
+```
+
+### V4 - Internal Library Calls
+```
+User → SwapRouter → PoolManager
+                     ↓
+                  pools[id].swap()  ← Library call (internal)
+                  ↓
+                  Pool Library applies logic to Pool.State
+
+Internal calls = Less gas
+```
+
+---
+
+## 🚀 Benefits of Singleton Design
+
+### 1. **Cheaper Pool Creation**
+```
+V3: Deploy new contract     = ~5,000,000 gas
+V4: Add mapping entry       = ~100,000 gas
+
+Savings: 98% cheaper! 🎉
+```
+
+### 2. **Cheaper Multi-Hop Swaps**
+```
+Swap: ETH → USDC → DAI
+
+V3 Flow:
+  User → ETH/USDC Pool (transfer ETH, get USDC)
+       → Transfer USDC to next pool
+       → USDC/DAI Pool (transfer USDC, get DAI)
+       → Transfer DAI to user
+
+  = 4 external token transfers
+
+V4 Flow:
+  User → PoolManager (send ETH)
+       → Internal: Calculate USDC amount
+       → Internal: Calculate DAI amount
+       → PoolManager (receive DAI)
+
+  = 2 external token transfers
+
+Savings: 50% fewer transfers! 🎉
+```
+
+### 3. **Unified Liquidity Management**
