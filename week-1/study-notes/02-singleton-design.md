@@ -61,3 +61,66 @@ Want tacos AND pizza?
 
 ### Uniswap V3 Architecture
 ```
+                    Factory Contract
+                          │
+        ┌─────────────────┼─────────────────┐
+        │                 │                 │
+        v                 v                 v
+   ┌─────────┐       ┌─────────┐       ┌─────────┐
+   │ Pool 1  │       │ Pool 2  │       │ Pool 3  │
+   │ Contract│       │ Contract│       │ Contract│
+   ├─────────┤       ├─────────┤       ├─────────┤
+   │ ETH/USDC│       │USDC/DAI │       │ DAI/WBTC│
+   │ State   │       │ State   │       │ State   │
+   │ Logic   │       │ Logic   │       │ Logic   │
+   └─────────┘       └─────────┘       └─────────┘
+
+   Each pool = NEW contract deployment
+   External calls between pools = EXPENSIVE
+```
+
+### Uniswap V4 Architecture (Singleton)
+```
+              ┌────────────────────────────────┐
+              │      POOL MANAGER              │
+              │      (ONE Contract)            │
+              ├────────────────────────────────┤
+              │                                │
+              │  Pool Registry (Mapping):      │
+              │  ┌──────────────────────────┐  │
+              │  │ PoolId → Pool.State      │  │
+              │  ├──────────────────────────┤  │
+              │  │ 0x01 → ETH/USDC Pool     │  │
+              │  │ 0x02 → USDC/DAI Pool     │  │
+              │  │ 0x03 → DAI/WBTC Pool     │  │
+              │  │ 0x04 → ... (infinite)    │  │
+              │  └──────────────────────────┘  │
+              │                                │
+              │  Pool Library Functions:       │
+              │  • swap()                      │
+              │  • modifyPosition()            │
+              │  • initialize()                │
+              └────────────────────────────────┘
+
+   All pools in ONE contract
+   Internal calls = CHEAP
+```
+
+---
+
+## 💻 How It Works: Code Comparison
+
+### V3 Style (Old Way)
+```solidity
+// V3: Factory creates NEW contracts
+contract UniswapV3Factory {
+    mapping(address => mapping(address => mapping(uint24 => address)))
+        public pools;
+
+    function createPool(address tokenA, address tokenB, uint24 fee) {
+        // Deploy a WHOLE NEW CONTRACT for this pool
+        address pool = new UniswapV3Pool{salt: ...}();
+        pools[tokenA][tokenB][fee] = pool;
+    }
+}
+
