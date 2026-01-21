@@ -361,3 +361,124 @@ V3 Launch (2021):
 ├─ Deployed with BSL
 ├─ License expires in 2 years
 └─ Prevents instant copycats
+
+V3 BSL Expiration (2023):
+├─ License converted to GPL
+├─ Now fully open source
+└─ Anyone can fork
+
+V4 Launch (2024):
+├─ Deployed with BSL
+├─ License expires in 2025
+└─ Same strategy as V3
+
+V4 BSL Expiration (2025):
+└─ Will become fully open source
+
+This is temporary protection, not permanent!
+```
+
+#### 3. BSL Prevents Low-Effort Forks
+```
+THE PROBLEM BSL SOLVES
+═══════════════════════
+
+Without BSL:
+1. Uniswap works hard on V4
+2. Competitor copies code
+3. Competitor launches BEFORE Uniswap
+4. Competitor gets first-mover advantage
+5. Uniswap's hard work is stolen
+
+This actually happened with V1 and V2!
+SushiSwap famously "vampire attacked" Uniswap.
+
+With BSL:
+1. Uniswap works hard on V4
+2. Competitor can see code (transparency!)
+3. Competitor CAN'T deploy competing fork yet
+4. Uniswap launches first
+5. After 2 years, code becomes fully open
+6. By then, Uniswap has network effects
+
+It's about FAIR COMPETITION, not lock-in!
+```
+
+#### 4. You CAN Still Build!
+```
+WHAT YOU CAN DO UNDER BSL
+═══════════════════════════
+
+✅ ALLOWED:
+├─ Build hooks
+├─ Deploy hooks to any pool
+├─ Create hook marketplaces
+├─ Build tools for V4
+├─ Integrate V4 into your app
+├─ Use V4 for your protocol
+└─ Make money from your hooks!
+
+❌ NOT ALLOWED (until expiration):
+├─ Deploy your own PoolManager
+├─ Create a competing DEX using V4 core
+└─ Launch "ForkSwap V4" on another chain
+
+For 99% of builders, this doesn't matter!
+You're not trying to clone Uniswap,
+you're trying to BUILD ON IT!
+```
+
+---
+
+### 🌍 Real-World Analogy: iPhone App Store
+
+```
+IPHONE ECOSYSTEM
+═══════════════
+
+iOS (like v4-core):
+├─ Proprietary (not open source)
+├─ You can't fork iOS
+├─ You can't make your own iPhone
+└─ But you can still build on it!
+
+App Store (like hooks):
+├─ ANYONE can build apps
+├─ ANYONE can publish
+├─ ANYONE can make money
+└─ Thriving ecosystem despite closed platform
+
+Uniswap V4 is even MORE open:
+├─ Source code is visible
+├─ You can read everything
+├─ You can verify it's safe
+└─ Just can't clone the core (yet)
+
+You're not trying to build a better iPhone,
+you're trying to build the next TikTok!
+```
+
+---
+
+### ✅ Takeaway
+```
+BSL concerns are VALID but MISUNDERSTOOD:
+
+✓ Only parts of core are BSL
+✓ Periphery (where you build) is fully open
+✓ BSL expires in 2025 → then GPL
+✓ You CAN build hooks and make money
+✓ Prevents unfair copycats, not innovation
+```
+
+---
+
+## 📊 Summary Table
+
+| Concern | Valid? | Real Impact | Solution |
+|---------|--------|-------------|----------|
+| **Gas Costs** | Yes | Medium | L2s + market forces |
+| **Fragmentation** | Somewhat | Low | Routers + network effects |
+| **BSL License** | Somewhat | Very Low | Doesn't affect hook devs |
+
+---
