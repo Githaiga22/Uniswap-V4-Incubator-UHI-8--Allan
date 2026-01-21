@@ -42,3 +42,47 @@ Internal calls = CHEAP
 ---
 
 ## Question 2: Flash Accounting
+
+**What is the main benefit of Flash Accounting in v4?**
+
+### ✅ Answer: C - Avoids intermediate token transfers in multi-hop swaps
+
+### Why?
+
+```
+WITHOUT Flash Accounting (V3):
+ETH → USDC → DAI
+
+Step 1: Transfer ETH
+Step 2: Transfer USDC ← (Extra transfer!)
+Step 3: Transfer DAI
+
+= 3 transfers
+
+WITH Flash Accounting (V4):
+ETH → USDC → DAI
+
+Step 1: Transfer ETH
+Step 2: [Math only, no transfer]
+Step 3: Transfer DAI
+
+= 2 transfers (USDC skipped!)
+```
+
+**Explanation**: Flash accounting tracks balance deltas internally. Intermediate tokens in a multi-hop swap never actually move - only start and end tokens transfer.
+
+**Why others are wrong**:
+- A: Can't do infinite swaps, still limited by balances
+- B: Custom fees come from hooks, not flash accounting
+- D: Batching happens at router level, not flash accounting
+
+---
+
+## Question 3: Transient Storage
+
+**What EIP introduced transient storage and what is its key benefit?**
+
+### ✅ Answer: C - EIP-1153; low-gas ephemeral storage
+
+### Why?
+
