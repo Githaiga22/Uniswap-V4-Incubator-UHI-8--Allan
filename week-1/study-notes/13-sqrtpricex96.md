@@ -202,3 +202,105 @@ Where:
   P_b = Upper bound = 2500
 
 Then:
+  Δy = L × (√P - √P_a)
+```
+
+### Step 1: Convert prices to √P
+
+```
+√P = √2000 ≈ 44.721
+√P_a = √1500 ≈ 38.730
+√P_b = √2500 = 50.000
+```
+
+### Step 2: Calculate L (liquidity)
+
+```
+L = 2 × 50.000 × 44.721 / (50.000 - 44.721)
+L = 2 × 50.000 × 44.721 / 5.279
+L = 4472.1 / 5.279
+L ≈ 847.1
+```
+
+### Step 3: Calculate USDC needed
+
+```
+Δy = 847.1 × (44.721 - 38.730)
+Δy = 847.1 × 5.991
+Δy ≈ 5076.1 USDC
+```
+
+**Answer**: Need approximately 5,076 USDC
+
+### In the Smart Contract
+
+```solidity
+// All values as sqrtPriceX96
+
+uint160 sqrtPriceCurrent = ...; // √P × 2^96
+uint160 sqrtPriceLower = ...;   // √P_a × 2^96
+uint160 sqrtPriceUpper = ...;   // √P_b × 2^96
+
+// Calculate liquidity
+uint128 liquidity = getLiquidityForAmounts(
+    sqrtPriceCurrent,
+    sqrtPriceLower,
+    sqrtPriceUpper,
+    amount0, // ETH amount
+    amount1  // USDC amount
+);
+```
+
+---
+
+## Slippage Protection Using sqrtPriceX96
+
+**Definition**: Slippage is the difference between expected price and actual execution price.
+
+### How It Works
+
+```
+SWAP WITH SLIPPAGE LIMIT
+════════════════════════
+
+User wants to swap:
+  - Sell 1 ETH
+  - Expected price: 2000 USDC
+  - Max slippage: 1.5%
+
+Calculation:
+  Minimum acceptable: 2000 × (1 - 0.015) = 1970 USDC
+
+Convert to sqrtPriceX96:
+  √1970 × 2^96 = sqrtPriceLimitX96
+
+In swap params:
+  SwapParams({
+    ...,
+    sqrtPriceLimitX96: calculated_limit
+  })
+```
+
+### During Swap Execution
+
+```
+CONTRACT CHECKS
+═══════════════
+
+For each swap step:
+
+1. Calculate new √P after trade
+2. Convert to sqrtPriceX96
+3. Compare with limit:
+
+   If selling Token0 (ETH):
+     new_sqrtPriceX96 >= limit ✅
+     (Price can't drop below limit)
+
+   If selling Token1 (USDC):
+     new_sqrtPriceX96 <= limit ✅
+     (Price can't rise above limit)
+
+4. If limit exceeded:
+   REVERT transaction ❌
+```
