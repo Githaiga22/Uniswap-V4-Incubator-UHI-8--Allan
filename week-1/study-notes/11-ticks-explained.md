@@ -241,3 +241,84 @@ Positive Ticks (Price > 1):
      +1  │ $1.00010
   +1000  │ $1.105
   +5000  │ $1.649
+ +10000  │ $2.718
+
+Formula: price = 1.0001^tick
+```
+
+---
+
+## Practical Example: Setting Up a Position
+
+**Scenario**: You want to provide ETH/USDC liquidity
+- Current Price: $1000 per ETH
+- Your Range: $900 - $1100
+
+### Step 1: Convert prices to ticks
+```
+Lower Price: $900
+  tick_lower = log($900) / log(1.0001)
+  tick_lower ≈ -1054
+
+Upper Price: $1100
+  tick_upper = log($1100) / log(1.0001)
+  tick_upper ≈ 953
+```
+
+### Step 2: Adjust for tick spacing
+```
+If pool has 0.30% fee (spacing = 60):
+
+tick_lower = -1054
+  Round to nearest 60: -1080
+
+tick_upper = 953
+  Round to nearest 60: 960
+
+Final Range: Tick -1080 to Tick 960
+Actual Prices: $895.86 to $1103.57
+```
+
+### Step 3: Deposit liquidity
+```
+Your position is now active between:
+  Lower Tick: -1080 ($895.86)
+  Upper Tick: 960 ($1103.57)
+
+If ETH price stays in this range:
+  ✅ You earn trading fees
+  ✅ Your liquidity is being used
+
+If price leaves this range:
+  ❌ You stop earning fees
+  ❌ Your position is all in one token
+```
+
+---
+
+## Why Ticks Matter
+
+```
+WITHOUT TICKS (V2):
+┌────────────────────────────────┐
+│ $1000 spread $0 to infinity    │
+│ Used: 5% of capital            │
+│ Wasted: 95% of capital         │
+│ Annual fees: $50               │
+└────────────────────────────────┘
+
+WITH TICKS (V3/V4):
+┌────────────────────────────────┐
+│ $1000 concentrated $900-$1100  │
+│ Used: 95% of capital           │
+│ Wasted: 5% (when out of range) │
+│ Annual fees: $950              │
+└────────────────────────────────┘
+
+Result: 19× more capital efficient! 🦄
+```
+
+---
+
+## Common Tick Mistakes
+
