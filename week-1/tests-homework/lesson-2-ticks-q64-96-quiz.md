@@ -238,3 +238,123 @@ Why: Price moved above your range. All capital converted to Token0.
 ---
 
 ### Question 12
+**Write Solidity code to check if current price is within a liquidity position's range.**
+
+<details>
+<summary>Answer</summary>
+
+```solidity
+function isPriceInRange(
+    uint160 currentSqrtPriceX96,
+    int24 tickLower,
+    int24 tickUpper
+) internal pure returns (bool) {
+    // Convert ticks to sqrtPriceX96 values
+    uint160 sqrtPriceLower = getSqrtRatioAtTick(tickLower);
+    uint160 sqrtPriceUpper = getSqrtRatioAtTick(tickUpper);
+
+    // Check if current price is between bounds
+    return currentSqrtPriceX96 >= sqrtPriceLower &&
+           currentSqrtPriceX96 <= sqrtPriceUpper;
+}
+```
+
+**Explanation**:
+1. Convert tick boundaries to sqrtPriceX96 values using library function
+2. Compare current price against both bounds
+3. Returns true if in range, false if outside
+
+**Usage**:
+```solidity
+bool inRange = isPriceInRange(
+    pool.slot0().sqrtPriceX96,
+    position.tickLower,
+    position.tickUpper
+);
+
+if (inRange) {
+    // Position is earning fees
+} else {
+    // Position is inactive
+}
+```
+</details>
+
+---
+
+## Section 4: Advanced Understanding (Technical)
+
+### Question 13
+**Why does Uniswap use square root of price instead of price directly?**
+
+<details>
+<summary>Answer</summary>
+
+**Mathematical Efficiency**:
+
+Using price directly requires complex formulas:
+```
+Computing liquidity:
+L = Δx × Δy
+(Requires multiplication, division, AND square roots)
+```
+
+Using square root of price simplifies:
+```
+With √P:
+L = Δx × √P
+OR
+L = Δy / √P
+(Much simpler - just multiplication or division!)
+```
+
+**Gas Savings**:
+- Fewer operations = lower gas costs
+- Square roots already calculated = reusable
+- Precision maintained throughout calculations
+
+**Real Impact**:
+A typical swap might save 10-30% gas by using √P instead of P directly.
+
+**The Math**: Because of the constant product formula (x × y = k), when you manipulate it algebraically, square roots naturally appear. Rather than compute them repeatedly, Uniswap stores √P directly.
+</details>
+
+---
+
+### Question 14
+**Calculate the liquidity needed if you have 2 ETH at current price $2000 and want to provide liquidity from $1500 to $2500.**
+
+<details>
+<summary>Answer</summary>
+
+**Given**:
+- Δx (ETH amount) = 2
+- P (current price) = 2000
+- P_a (lower bound) = 1500
+- P_b (upper bound) = 2500
+
+**Step 1**: Convert to square roots
+```
+√P = √2000 ≈ 44.721
+√P_a = √1500 ≈ 38.730
+√P_b = √2500 = 50.000
+```
+
+**Step 2**: Calculate liquidity (L)
+```
+Formula: L = Δx × √P_b × √P / (√P_b - √P)
+
+L = 2 × 50.000 × 44.721 / (50.000 - 44.721)
+L = 2 × 50.000 × 44.721 / 5.279
+L = 4,472.1 / 5.279
+L ≈ 847.1
+```
+
+**Step 3**: Calculate USDC needed (Δy)
+```
+Formula: Δy = L × (√P - √P_a)
+
+Δy = 847.1 × (44.721 - 38.730)
+Δy = 847.1 × 5.991
+Δy ≈ 5,076 USDC
+```
