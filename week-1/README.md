@@ -206,3 +206,59 @@ Hook Development Flow:
 **Architecture**:
 1. Singleton design enables cheap multi-pool operations
 2. Flash accounting + transient storage = minimal gas overhead
+3. Hook permissions encoded in addresses is brilliant validation
+4. Locking mechanism prevents reentrancy elegantly
+
+**Mathematics**:
+1. Discrete ticks make concentrated liquidity computationally tractable
+2. Q64.96 provides precision without floating-point complexity
+3. Storing √P instead of P is non-obvious but mathematically optimal
+4. Price representation choices cascade through entire protocol
+
+**Hook Development Preparation**:
+- Must deeply understand price representations for any price-dependent logic
+- Tick math is unavoidable for position management hooks
+- Q64.96 arithmetic errors can drain pools - safe math libraries are mandatory
+- The protocol's design choices constrain but also guide hook architecture
+
+---
+
+## Study Materials Completed
+
+### Study Notes
+```
+Day 1 (10 files):
+01-uniswap-v4-overview.md       06-hooks-introduction.md
+02-singleton-design.md          07-hook-mechanics.md
+03-flash-accounting.md          08-swap-flow.md
+04-transient-storage.md         09-liquidity-flow.md
+05-erc6909-claims.md            10-common-concerns.md
+
+Day 2 (3 files):
+11-ticks-explained.md
+12-q64-96-numbers.md
+13-sqrtpricex96.md
+```
+
+### Practice & Assessment
+```
+Quiz: lesson-2-ticks-q64-96-quiz.md (18 questions)
+Exercises: lesson-2-exercises.md (5 sets + challenge project)
+Resources: Links, documentation, calculators
+```
+
+---
+
+## Next Steps
+
+Week 2 begins with "Building Your First Hook" - applying this foundation to actual hook development. The prerequisite knowledge is now in place:
+- How pools operate internally
+- How hooks integrate with lifecycle events
+- How to work with prices and ticks mathematically
+
+The architecture makes sense. The math is understandable. Time to build.
+
+---
+
+**Allan Robinson**
+Week 1 Complete - January 22, 2026
