@@ -194,3 +194,199 @@ Q64.96 = 79,228,162,514,264,337,593,543,950
 
 ---
 
+### Exercise 2.2: Q64.96 to Decimal
+**Task**: Convert these Q64.96 values back to decimal.
+
+**Q64.96 Values**:
+a) 158,456,325,028,528,675,187,087,900,672
+b) 39,614,081,257,132,168,796,771,975,168
+c) 7,922,816,251,426,433,759,354,395,033,600
+
+<details>
+<summary>Solutions</summary>
+
+**a) 158,456,325,028,528,675,187,087,900,672**
+```
+decimal = Q64.96 ÷ 2^96
+decimal = 158,456,325,028,528,675,187,087,900,672 ÷ 79,228,162,514,264,337,593,543,950,336
+decimal = 2.0
+```
+
+**b) 39,614,081,257,132,168,796,771,975,168**
+```
+decimal = Q64.96 ÷ 2^96
+decimal = 39,614,081,257,132,168,796,771,975,168 ÷ 79,228,162,514,264,337,593,543,950,336
+decimal = 0.5
+```
+
+**c) 7,922,816,251,426,433,759,354,395,033,600**
+```
+decimal = Q64.96 ÷ 2^96
+decimal = 7,922,816,251,426,433,759,354,395,033,600 ÷ 79,228,162,514,264,337,593,543,950,336
+decimal = 100.0
+```
+</details>
+
+---
+
+### Exercise 2.3: Q64.96 Arithmetic
+**Task**: Perform these operations on Q64.96 numbers.
+
+Let:
+- a = 4 (in Q64.96 = 316,912,650,057,057,350,374,175,801,344)
+- b = 2 (in Q64.96 = 158,456,325,028,528,675,187,087,900,672)
+
+**Operations**:
+a) a + b
+b) a × b (remember to adjust scale!)
+c) a ÷ b (remember to adjust scale!)
+
+<details>
+<summary>Solutions</summary>
+
+**a) Addition: a + b**
+```
+Addition is straightforward with Q64.96
+
+result = 316,912,650,057,057,350,374,175,801,344 + 158,456,325,028,528,675,187,087,900,672
+result = 475,368,975,085,586,025,561,263,702,016
+
+Convert back:
+475,368,975,085,586,025,561,263,702,016 ÷ 2^96 = 6.0 ✅
+```
+
+**b) Multiplication: a × b**
+```
+MUST divide by 2^96 after multiplying!
+
+result = (a × b) ÷ 2^96
+result = (316,912,650,057,057,350,374,175,801,344 × 158,456,325,028,528,675,187,087,900,672) ÷ 2^96
+
+Simplified calculation:
+result = (4 × 2^96) × (2 × 2^96) ÷ 2^96
+result = 8 × 2^96
+result = 633,825,300,114,114,700,748,351,602,688
+
+Convert back:
+633,825,300,114,114,700,748,351,602,688 ÷ 2^96 = 8.0 ✅
+
+❌ WRONG: Just multiplying gives 2^192 scale!
+```
+
+**c) Division: a ÷ b**
+```
+MUST multiply by 2^96 before dividing!
+
+result = (a × 2^96) ÷ b
+result = (316,912,650,057,057,350,374,175,801,344 × 2^96) ÷ 158,456,325,028,528,675,187,087,900,672
+
+Simplified calculation:
+result = (4 × 2^96 × 2^96) ÷ (2 × 2^96)
+result = 2 × 2^96
+result = 158,456,325,028,528,675,187,087,900,672
+
+Convert back:
+158,456,325,028,528,675,187,087,900,672 ÷ 2^96 = 2.0 ✅
+
+❌ WRONG: Just dividing loses precision!
+```
+</details>
+
+---
+
+## Exercise Set 3: sqrtPriceX96 (Advanced)
+
+### Exercise 3.1: Price to sqrtPriceX96
+**Task**: Convert these prices to sqrtPriceX96 format.
+
+**Prices**:
+a) $1000
+b) $2500
+c) $0.50
+
+<details>
+<summary>Solutions</summary>
+
+**a) Price = $1000**
+```
+Step 1: Take square root
+√1000 ≈ 31.6228
+
+Step 2: Convert to Q64.96
+sqrtPriceX96 = 31.6228 × 2^96
+sqrtPriceX96 = 31.6228 × 79,228,162,514,264,337,593,543,950,336
+sqrtPriceX96 = 2,505,414,483,750,824,843,905,891,325,952
+```
+
+**b) Price = $2500**
+```
+Step 1: Take square root
+√2500 = 50.0
+
+Step 2: Convert to Q64.96
+sqrtPriceX96 = 50.0 × 2^96
+sqrtPriceX96 = 50.0 × 79,228,162,514,264,337,593,543,950,336
+sqrtPriceX96 = 3,961,408,125,713,216,879,677,197,516,800
+```
+
+**c) Price = $0.50**
+```
+Step 1: Take square root
+√0.50 ≈ 0.7071
+
+Step 2: Convert to Q64.96
+sqrtPriceX96 = 0.7071 × 2^96
+sqrtPriceX96 = 0.7071 × 79,228,162,514,264,337,593,543,950,336
+sqrtPriceX96 = 56,022,770,974,786,139,918,731,938,227
+```
+</details>
+
+---
+
+### Exercise 3.2: sqrtPriceX96 to Price
+**Task**: Convert these sqrtPriceX96 values back to regular prices.
+
+**sqrtPriceX96 Values**:
+a) 3,961,408,125,713,216,879,677,197,516,800
+b) 1,252,707,241,875,412,421,952,945,662,976
+
+<details>
+<summary>Solutions</summary>
+
+**a) sqrtPriceX96 = 3,961,408,125,713,216,879,677,197,516,800**
+```
+Step 1: Convert from Q64.96
+√P = 3,961,408,125,713,216,879,677,197,516,800 ÷ 2^96
+√P = 3,961,408,125,713,216,879,677,197,516,800 ÷ 79,228,162,514,264,337,593,543,950,336
+√P = 50.0
+
+Step 2: Square to get price
+P = (50.0)^2
+P = 2500
+
+Answer: $2500 ✅
+```
+
+**b) sqrtPriceX96 = 1,252,707,241,875,412,421,952,945,662,976**
+```
+Step 1: Convert from Q64.96
+√P = 1,252,707,241,875,412,421,952,945,662,976 ÷ 2^96
+√P ≈ 15.8114
+
+Step 2: Square to get price
+P = (15.8114)^2
+P ≈ 250.0
+
+Answer: $250 ✅
+```
+</details>
+
+---
+
+### Exercise 3.3: Slippage Limits
+**Task**: Calculate sqrtPriceLimitX96 for these swap scenarios.
+
+**Scenario A**:
+- Selling ETH for USDC
+- Expected price: $2000
+- Max slippage: 2%
