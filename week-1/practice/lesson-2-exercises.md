@@ -390,3 +390,199 @@ Answer: $250 ✅
 - Selling ETH for USDC
 - Expected price: $2000
 - Max slippage: 2%
+
+**Scenario B**:
+- Buying ETH with USDC
+- Expected price: $1800
+- Max slippage: 1.5%
+
+<details>
+<summary>Solutions</summary>
+
+**Scenario A: Selling ETH (price should not fall below limit)**
+```
+Expected: $2000
+Slippage: 2%
+
+Minimum acceptable price:
+P_min = 2000 × (1 - 0.02)
+P_min = 2000 × 0.98
+P_min = 1960
+
+Convert to sqrtPriceX96:
+√1960 ≈ 44.2719
+
+sqrtPriceLimitX96 = 44.2719 × 2^96
+sqrtPriceLimitX96 = 3,508,112,621,881,767,893,456,879,104,000
+
+Swap will REVERT if price drops below $1960 ✅
+```
+
+**Scenario B: Buying ETH (price should not rise above limit)**
+```
+Expected: $1800
+Slippage: 1.5%
+
+Maximum acceptable price:
+P_max = 1800 × (1 + 0.015)
+P_max = 1800 × 1.015
+P_max = 1827
+
+Convert to sqrtPriceX96:
+√1827 ≈ 42.7435
+
+sqrtPriceLimitX96 = 42.7435 × 2^96
+sqrtPriceLimitX96 = 3,387,243,287,546,892,154,678,012,928,000
+
+Swap will REVERT if price rises above $1827 ✅
+```
+</details>
+
+---
+
+## Exercise Set 4: Liquidity Positions (Advanced)
+
+### Exercise 4.1: Calculate Token Amounts
+**Task**: You have $10,000 to provide liquidity for ETH/USDC.
+
+**Given**:
+- Current ETH price: $2000
+- Your range: $1800 - $2200
+- Total capital: $10,000
+
+Calculate how much ETH and USDC you need.
+
+<details>
+<summary>Solution</summary>
+
+**Step 1: Convert prices to ticks**
+```
+Current: $2000 → tick ≈ 6,931
+Lower: $1800 → tick ≈ 5,877
+Upper: $2200 → tick ≈ 7,875
+```
+
+**Step 2: Calculate square roots**
+```
+√P = √2000 ≈ 44.721
+√P_a = √1800 ≈ 42.426
+√P_b = √2200 ≈ 46.904
+```
+
+**Step 3: Determine capital split**
+At current price in range, you need both tokens.
+
+The ratio depends on the formula:
+```
+Ratio = (√P - √P_a) / (√P_b - √P_a)
+
+Ratio = (44.721 - 42.426) / (46.904 - 42.426)
+Ratio = 2.295 / 4.478
+Ratio ≈ 0.5125 (51.25%)
+
+This means:
+USDC needed: 51.25% of $10,000 = $5,125
+ETH value: 48.75% of $10,000 = $4,875
+```
+
+**Step 4: Convert to token amounts**
+```
+USDC: $5,125
+ETH: $4,875 ÷ $2000 per ETH = 2.4375 ETH
+
+Final amounts:
+- 2.4375 ETH
+- 5,125 USDC
+- Total value: $10,000 ✅
+```
+
+**Note**: Exact amounts vary based on current pool liquidity and precise tick calculations. Use Uniswap's SDK for production calculations.
+</details>
+
+---
+
+### Exercise 4.2: Position Status Check
+**Task**: Analyze these liquidity positions.
+
+**Position A**:
+- Range: Tick -1000 to Tick 1000
+- Current tick: 500
+
+**Position B**:
+- Range: Tick 5000 to Tick 8000
+- Current tick: 9000
+
+**Position C**:
+- Range: Tick -500 to Tick 2000
+- Current tick: -600
+
+For each, determine:
+1. Is it in range?
+2. What's the token composition?
+3. Is it earning fees?
+
+<details>
+<summary>Solutions</summary>
+
+**Position A**: Tick -1000 to 1000, Current: 500
+```
+1. In range? YES ✅
+   (500 is between -1000 and 1000)
+
+2. Token composition: MIX of both tokens
+   - Approximately 50/50 since current tick is near middle
+
+3. Earning fees? YES ✅
+   - Position is active and facilitating swaps
+```
+
+**Position B**: Tick 5000 to 8000, Current: 9000
+```
+1. In range? NO ❌
+   (9000 is ABOVE 8000)
+
+2. Token composition: 100% Token0
+   - Price moved above range
+   - All capital converted to Token0 (e.g., ETH)
+
+3. Earning fees? NO ❌
+   - Position is inactive
+   - Need to rebalance or wait for price to drop
+```
+
+**Position C**: Tick -500 to 2000, Current: -600
+```
+1. In range? NO ❌
+   (-600 is BELOW -500)
+
+2. Token composition: 100% Token1
+   - Price moved below range
+   - All capital converted to Token1 (e.g., USDC)
+
+3. Earning fees? NO ❌
+   - Position is inactive
+   - Need to rebalance or wait for price to rise
+```
+</details>
+
+---
+
+## Exercise Set 5: Coding Challenges (Expert)
+
+### Exercise 5.1: Implement Tick Math
+**Task**: Write a Solidity function to convert price to tick.
+
+**Requirements**:
+- Input: uint256 price (as regular number, not Q64.96)
+- Output: int24 tick
+- Use approximation for log calculation
+
+<details>
+<summary>Solution</summary>
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+library TickMathHelper {
+    /// @notice Calculates tick from price (approximate)
