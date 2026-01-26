@@ -406,3 +406,105 @@ function isPriceInRange(
 ```
 
 ### Calculate Price Impact
+
+```solidity
+function getPriceImpact(
+    uint160 sqrtPriceBefore,
+    uint160 sqrtPriceAfter
+) internal pure returns (uint256) {
+    // Convert to actual prices
+    uint256 priceBefore = (uint256(sqrtPriceBefore) *
+                           uint256(sqrtPriceBefore)) >> 192;
+    uint256 priceAfter = (uint256(sqrtPriceAfter) *
+                          uint256(sqrtPriceAfter)) >> 192;
+
+    // Calculate percentage change
+    return ((priceAfter - priceBefore) * 10000) / priceBefore;
+}
+```
+
+---
+
+## The Big Picture
+
+```
+WHY ALL OF THIS EXISTS
+═══════════════════════
+
+Problem:
+  Blockchain needs precise math
+  But can't do floating point
+
+Solution:
+  Ticks → Discrete price points
+  Q64.96 → High precision integers
+  √P → Simplified calculations
+  sqrtPriceX96 → Combine all three!
+
+Result:
+  ✅ Accurate calculations
+  ✅ Gas efficient
+  ✅ No precision loss
+  ✅ Deterministic results
+```
+
+---
+
+## Resources & Citations
+
+1. **RareSkills - sqrtPriceX96 Deep Dive**
+   https://rareskills.io/post/uniswap-v3-sqrtpricex96
+
+2. **Uniswap V3 Math Primer**
+   https://blog.uniswap.org/uniswap-v3-math-primer
+
+3. **Computing Tick from sqrtPriceX96**
+   https://rareskills.io/post/uniswap-v3-price-to-tick
+
+4. **TickMath Library (Source Code)**
+   https://github.com/Uniswap/v4-core/blob/main/src/libraries/TickMath.sol
+
+5. **SqrtPriceMath Library Documentation**
+   https://docs.uniswap.org/contracts/v3/reference/core/libraries/SqrtPriceMath
+
+6. **Hook Deployment Guide**
+   https://docs.uniswap.org/contracts/v4/guides/hooks/hook-deployment
+
+---
+
+## Self-Check Questions
+
+1. **Why does Uniswap use square root of price?**
+   <details>
+   <summary>Answer</summary>
+   Square roots simplify liquidity calculations, making them more gas-efficient while maintaining precision.
+   </details>
+
+2. **What does the X96 suffix mean?**
+   <details>
+   <summary>Answer</summary>
+   It indicates the value is in Q64.96 format (multiplied by 2^96).
+   </details>
+
+3. **How do you convert sqrtPriceX96 to regular price?**
+   <details>
+   <summary>Answer</summary>
+   Divide by 2^96 to get √P, then square the result to get P.
+   </details>
+
+4. **What is sqrtPriceLimitX96 used for?**
+   <details>
+   <summary>Answer</summary>
+   Slippage protection - defines the maximum/minimum acceptable price during a swap.
+   </details>
+
+5. **Why do hook developers need to understand this?**
+   <details>
+   <summary>Answer</summary>
+   Hooks often need to read prices, set slippage limits, calculate token amounts, and make price-based decisions.
+   </details>
+
+---
+
+**Previous**: [Q64.96 Numbers](./12-q64-96-numbers.md)
+**Next**: Week 2 content coming soon
