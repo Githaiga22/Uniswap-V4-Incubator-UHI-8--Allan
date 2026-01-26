@@ -304,3 +304,105 @@ For each swap step:
 4. If limit exceeded:
    REVERT transaction ❌
 ```
+
+---
+
+## Code Example: SwapParams Structure
+
+```solidity
+struct SwapParams {
+    // Currency to swap from
+    Currency currency0;
+
+    // Currency to swap to
+    Currency currency1;
+
+    // Fee tier of pool
+    uint24 fee;
+
+    // Tick spacing
+    int24 tickSpacing;
+
+    // Direction: true = 0→1, false = 1→0
+    bool zeroForOne;
+
+    // Amount to swap (negative = exact input)
+    int256 amountSpecified;
+
+    // SLIPPAGE PROTECTION
+    uint160 sqrtPriceLimitX96; // ← This is the key!
+}
+```
+
+---
+
+## Why This Matters for Hook Developers
+
+### Use Case 1: Limit Orders Hook
+
+```
+Hook needs to:
+1. Store user's desired price
+   → Convert P to tick
+
+2. Check if price reached
+   → Read current sqrtPriceX96
+   → Convert to P
+   → Compare
+
+3. Execute swap with slippage
+   → Calculate sqrtPriceLimitX96
+   → Pass to PoolManager
+```
+
+### Use Case 2: Position Rebalancing Hook
+
+```
+Hook needs to:
+1. Calculate optimal range
+   → Get current sqrtPriceX96
+   → Determine new tick bounds
+
+2. Check liquidity distribution
+   → Query liquidity at ticks
+   → Use √P calculations
+
+3. Rebalance position
+   → Calculate token amounts needed
+   → Use √P formulas
+```
+
+### Use Case 3: Dynamic Fee Hook
+
+```
+Hook needs to:
+1. Monitor price volatility
+   → Track sqrtPriceX96 changes
+   → Calculate price swings
+
+2. Adjust fees accordingly
+   → Large ΔsqrtPriceX96 = higher fees
+   → Small ΔsqrtPriceX96 = lower fees
+```
+
+---
+
+## Common Operations
+
+### Check if Price in Range
+
+```solidity
+function isPriceInRange(
+    uint160 sqrtPriceX96,
+    int24 tickLower,
+    int24 tickUpper
+) internal pure returns (bool) {
+    uint160 sqrtPriceLower = getSqrtRatioAtTick(tickLower);
+    uint160 sqrtPriceUpper = getSqrtRatioAtTick(tickUpper);
+
+    return sqrtPriceX96 >= sqrtPriceLower &&
+           sqrtPriceX96 <= sqrtPriceUpper;
+}
+```
+
+### Calculate Price Impact
