@@ -586,3 +586,199 @@ pragma solidity ^0.8.20;
 
 library TickMathHelper {
     /// @notice Calculates tick from price (approximate)
+    /// @param price The price as a regular uint256
+    /// @return tick The corresponding tick value
+    function getTickFromPrice(uint256 price)
+        internal
+        pure
+        returns (int24 tick)
+    {
+        require(price > 0, "Price must be positive");
+
+        // Convert price to Q64.96
+        uint160 sqrtPriceX96 = uint160(
+            sqrt(price) * (2 ** 96)
+        );
+
+        // Use Uniswap's TickMath library for precise conversion
+        tick = getTickAtSqrtRatio(sqrtPriceX96);
+    }
+
+    /// @notice Calculate square root (Babylonian method)
+    function sqrt(uint256 x) internal pure returns (uint256) {
+        if (x == 0) return 0;
+
+        uint256 z = (x + 1) / 2;
+        uint256 y = x;
+
+        while (z < y) {
+            y = z;
+            z = (x / z + z) / 2;
+        }
+
+        return y;
+    }
+
+    /// @notice Get tick from sqrtPriceX96 (simplified)
+    /// @dev In production, use Uniswap's TickMath.getTickAtSqrtRatio
+    function getTickAtSqrtRatio(uint160 sqrtPriceX96)
+        internal
+        pure
+        returns (int24 tick)
+    {
+        // Simplified approximation
+        // Real implementation uses binary search + lookup table
+
+        uint256 ratio = uint256(sqrtPriceX96);
+
+        // Approximate using log base 1.0001
+        // tick ≈ log(ratio) / log(1.0001)
+
+        // This is a simplified version
+        // Use Uniswap's library for production!
+        require(ratio >= 4295128739 && ratio <= 1461446703485210103287273052203988822378723970342, "Invalid ratio");
+
+        // Binary search implementation would go here
+        // For this exercise, acknowledge complexity
+        // and recommend using Uniswap's battle-tested library
+
+        revert("Use TickMath library from Uniswap v4-core");
+    }
+}
+```
+
+**Learning Point**: Tick math is complex! In production, always use Uniswap's audited libraries:
+```solidity
+import {TickMath} from "v4-core/libraries/TickMath.sol";
+
+int24 tick = TickMath.getTickAtSqrtRatio(sqrtPriceX96);
+```
+</details>
+
+---
+
+### Exercise 5.2: Build a Price Monitor Hook
+**Task**: Create a hook that logs significant price changes.
+
+**Requirements**:
+- Triggers on price change > 1% (100 ticks)
+- Emits event with old and new prices
+- Stores price history
+
+<details>
+<summary>Solution</summary>
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import {BaseHook} from "v4-periphery/BaseHook.sol";
+import {IPoolManager} from "v4-core/interfaces/IPoolManager.sol";
+import {PoolKey} from "v4-core/types/PoolKey.sol";
+import {BalanceDelta} from "v4-core/types/BalanceDelta.sol";
+import {Hooks} from "v4-core/libraries/Hooks.sol";
+
+contract PriceMonitorHook is BaseHook {
+    // Track last recorded price for each pool
+    mapping(bytes32 => uint160) public lastSqrtPriceX96;
+
+    // Price change threshold (100 ticks ≈ 1%)
+    uint160 public constant PRICE_CHANGE_THRESHOLD = 100;
+
+    event SignificantPriceChange(
+        bytes32 indexed poolId,
+        uint160 oldSqrtPriceX96,
+        uint160 newSqrtPriceX96,
+        int24 oldTick,
+        int24 newTick,
+        uint256 changePercent
+    );
+
+    constructor(IPoolManager _poolManager) BaseHook(_poolManager) {}
+
+    function getHookPermissions()
+        public
+        pure
+        override
+        returns (Hooks.Permissions memory)
+    {
+        return Hooks.Permissions({
+            beforeInitialize: false,
+            afterInitialize: true,
+            beforeAddLiquidity: false,
+            afterAddLiquidity: false,
+            beforeRemoveLiquidity: false,
+            afterRemoveLiquidity: false,
+            beforeSwap: false,
+            afterSwap: true,
+            beforeDonate: false,
+            afterDonate: false
+        });
+    }
+
+    function afterInitialize(
+        address,
+        PoolKey calldata key,
+        uint160 sqrtPriceX96,
+        int24
+    ) external override returns (bytes4) {
+        // Store initial price
+        bytes32 poolId = keccak256(abi.encode(key));
+        lastSqrtPriceX96[poolId] = sqrtPriceX96;
+
+        return BaseHook.afterInitialize.selector;
+    }
+
+    function afterSwap(
+        address,
+        PoolKey calldata key,
+        IPoolManager.SwapParams calldata,
+        BalanceDelta,
+        bytes calldata
+    ) external override returns (bytes4) {
+        bytes32 poolId = keccak256(abi.encode(key));
+
+        // Get current price
+        (uint160 currentSqrtPriceX96, int24 currentTick,) =
+            poolManager.getSlot0(poolId);
+
+        uint160 oldSqrtPriceX96 = lastSqrtPriceX96[poolId];
+
+        // Calculate price change
+        uint160 priceChange = currentSqrtPriceX96 > oldSqrtPriceX96
+            ? currentSqrtPriceX96 - oldSqrtPriceX96
+            : oldSqrtPriceX96 - currentSqrtPriceX96;
+
+        // Check if change exceeds threshold
+        uint256 changePercent = (uint256(priceChange) * 10000) /
+                                uint256(oldSqrtPriceX96);
+
+        if (changePercent >= 100) {  // 1% = 100 basis points
+            // Get old tick (approximate)
+            int24 oldTick = getTickFromSqrtPrice(oldSqrtPriceX96);
+
+            emit SignificantPriceChange(
+                poolId,
+                oldSqrtPriceX96,
+                currentSqrtPriceX96,
+                oldTick,
+                currentTick,
+                changePercent
+            );
+
+            // Update stored price
+            lastSqrtPriceX96[poolId] = currentSqrtPriceX96;
+        }
+
+        return BaseHook.afterSwap.selector;
+    }
+
+    function getTickFromSqrtPrice(uint160 sqrtPriceX96)
+        internal
+        pure
+        returns (int24)
+    {
+        // Simplified - use TickMath library in production
+        return 0; // Placeholder
+    }
+}
