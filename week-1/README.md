@@ -102,3 +102,55 @@ Bit 0: beforeInitialize
 Bit 1: afterInitialize
 Bit 2: beforeSwap
 Bit 3: afterSwap
+...
+
+Need correct flags? Must mine the address.
+```
+
+**Implication**: Hook deployment requires computational work to find an address matching your permission needs. This was unexpected but makes validation gas-efficient.
+
+---
+
+## Day 2: Ticks and Price Mathematics (January 22, 2026)
+
+### Discrete Price Points - Ticks
+
+Concentrated liquidity requires price boundaries. Rather than continuous prices, V4 uses discrete ticks.
+
+```
+Price Spectrum:
+─────────────────────────────────→
+     Continuous (infinite points)
+
+Tick Spectrum:
+──┬───┬───┬───┬───┬───┬──→
+  │   │   │   │   │   │
+ -2  -1   0   1   2   3
+     Discrete (specific points)
+```
+
+**Formula**: `price = 1.0001^tick`
+
+Each tick represents a 0.01% price change. This granularity is sufficient for all practical trading pairs.
+
+**Tick Spacing** varies by fee tier:
+- 0.01% fee → spacing 1 (stable pairs)
+- 0.30% fee → spacing 60 (standard pairs)
+- 1.00% fee → spacing 200 (volatile pairs)
+
+### Q64.96 Fixed-Point Numbers
+
+Solidity has no floating-point support. Q64.96 solves this by representing decimals as scaled integers.
+
+```
+Q64.96 Structure:
+┌──────────┬──────────────┐
+│ 64 bits  │   96 bits    │
+│ Integer  │  Fractional  │
+└──────────┴──────────────┘
+    Total: 160 bits
+
+Encoding: value × 2^96
+Decoding: value ÷ 2^96
+```
+
