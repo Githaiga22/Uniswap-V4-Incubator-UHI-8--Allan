@@ -162,3 +162,85 @@ Given: 79,228,162,514,264,337,593,543,950,336
 Step 1: Divide by 2^96
   decimal = 79,228,162,514,264,337,593,543,950,336 ÷ 2^96
 
+  decimal = 1.0 ✅
+```
+
+---
+
+## Why 96 Bits for Decimals?
+
+```
+PRECISION COMPARISON
+═══════════════════════
+
+Regular decimal (16 digits):
+  Precision: 0.0000000000000001
+
+Q64.96 (96 bits):
+  Precision: 1 / 2^96
+  ≈ 0.00000000000000000000000000001263
+
+Q64.96 is MUCH more precise! 🦄
+```
+
+**Benefits**:
+- Handles tiny price differences
+- No rounding errors accumulate
+- Perfect for high-value pools
+
+---
+
+## Math Operations with Q64.96
+
+### Addition (Easy)
+```
+If both numbers in Q64.96:
+
+  a_Q = 100 × 2^96
+  b_Q = 50 × 2^96
+
+Addition:
+  result_Q = a_Q + b_Q
+  result_Q = (100 + 50) × 2^96
+  result_Q = 150 × 2^96 ✅
+
+Just add directly!
+```
+
+### Multiplication (Careful!)
+```
+If both numbers in Q64.96:
+
+  a_Q = 100 × 2^96
+  b_Q = 50 × 2^96
+
+Multiplication:
+  result_Q = (a_Q × b_Q) ÷ 2^96
+           = (100 × 2^96) × (50 × 2^96) ÷ 2^96
+           = 5000 × 2^96 ✅
+
+Must divide by 2^96 to fix scale!
+```
+
+### Division (Careful!)
+```
+If both numbers in Q64.96:
+
+  a_Q = 100 × 2^96
+  b_Q = 50 × 2^96
+
+Division:
+  result_Q = (a_Q × 2^96) ÷ b_Q
+           = (100 × 2^96 × 2^96) ÷ (50 × 2^96)
+           = 2 × 2^96 ✅
+
+Must multiply by 2^96 to fix scale!
+```
+
+---
+
+## Practical Example
+
+**Scenario**: Calculate price in Uniswap pool
+
+```
