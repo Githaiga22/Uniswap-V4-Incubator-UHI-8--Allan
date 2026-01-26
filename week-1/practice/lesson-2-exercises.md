@@ -782,3 +782,202 @@ contract PriceMonitorHook is BaseHook {
         return 0; // Placeholder
     }
 }
+```
+
+**Usage**:
+```solidity
+// Deploy hook
+PriceMonitorHook monitor = new PriceMonitorHook(poolManager);
+
+// Listen for events
+monitor.SignificantPriceChange.on("event", (event) => {
+    console.log(`Price changed by ${event.changePercent / 100}%`);
+});
+```
+</details>
+
+---
+
+### Exercise 5.3: Dynamic Range Adjuster
+**Task**: Write logic to calculate optimal tick range based on volatility.
+
+**Concept**:
+- High volatility → wider range
+- Low volatility → tighter range
+
+<details>
+<summary>Solution</summary>
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+library RangeOptimizer {
+    struct VolatilityData {
+        uint256[] priceHistory;  // Last N prices
+        uint256 windowSize;      // Number of data points
+    }
+
+    /// @notice Calculate optimal tick range based on volatility
+    /// @param currentTick The current pool tick
+    /// @param volatilityData Historical price data
+    /// @return tickLower Lower bound of optimal range
+    /// @return tickUpper Upper bound of optimal range
+    function calculateOptimalRange(
+        int24 currentTick,
+        VolatilityData memory volatilityData
+    ) internal pure returns (int24 tickLower, int24 tickUpper) {
+        // Calculate standard deviation of prices
+        uint256 stdDev = calculateStandardDeviation(
+            volatilityData.priceHistory
+        );
+
+        // Determine range width based on volatility
+        int24 rangeWidth;
+
+        if (stdDev < 100) {
+            // Low volatility: tight range (±5%)
+            rangeWidth = 500;  // ~5%
+        } else if (stdDev < 500) {
+            // Medium volatility: moderate range (±10%)
+            rangeWidth = 1000;  // ~10%
+        } else {
+            // High volatility: wide range (±20%)
+            rangeWidth = 2000;  // ~20%
+        }
+
+        // Center range around current tick
+        tickLower = currentTick - rangeWidth;
+        tickUpper = currentTick + rangeWidth;
+
+        // Adjust for tick spacing (example: spacing = 60)
+        tickLower = (tickLower / 60) * 60;
+        tickUpper = (tickUpper / 60) * 60;
+
+        return (tickLower, tickUpper);
+    }
+
+    /// @notice Calculate standard deviation of prices
+    function calculateStandardDeviation(uint256[] memory prices)
+        internal
+        pure
+        returns (uint256)
+    {
+        require(prices.length > 0, "No price data");
+
+        // Calculate mean
+        uint256 sum = 0;
+        for (uint i = 0; i < prices.length; i++) {
+            sum += prices[i];
+        }
+        uint256 mean = sum / prices.length;
+
+        // Calculate variance
+        uint256 varianceSum = 0;
+        for (uint i = 0; i < prices.length; i++) {
+            uint256 diff = prices[i] > mean
+                ? prices[i] - mean
+                : mean - prices[i];
+            varianceSum += diff * diff;
+        }
+        uint256 variance = varianceSum / prices.length;
+
+        // Return square root of variance (standard deviation)
+        return sqrt(variance);
+    }
+
+    /// @notice Calculate square root (Babylonian method)
+    function sqrt(uint256 x) internal pure returns (uint256) {
+        if (x == 0) return 0;
+        uint256 z = (x + 1) / 2;
+        uint256 y = x;
+        while (z < y) {
+            y = z;
+            z = (x / z + z) / 2;
+        }
+        return y;
+    }
+}
+```
+
+**Example Usage**:
+```solidity
+// Track price history
+uint256[] memory priceHistory = [1000, 1005, 998, 1002, 1010];
+
+VolatilityData memory volData = VolatilityData({
+    priceHistory: priceHistory,
+    windowSize: 5
+});
+
+// Calculate optimal range
+(int24 tickLower, int24 tickUpper) =
+    RangeOptimizer.calculateOptimalRange(6931, volData);
+
+// tickLower ≈ 6431 (~$940)
+// tickUpper ≈ 7431 (~$1060)
+// Range: ±~6% based on low volatility
+```
+</details>
+
+---
+
+## Challenge Project: Build a Position Manager
+
+**Goal**: Create a complete system that manages LP positions automatically.
+
+**Requirements**:
+1. Monitor pool prices every block
+2. Calculate if position is in/out of range
+3. Rebalance when out of range
+4. Optimize new ranges based on volatility
+5. Emit detailed events for tracking
+
+**Deliverables**:
+- Smart contract implementation
+- Test suite with edge cases
+- Gas optimization analysis
+- Documentation
+
+**Hints**:
+- Use afterSwap hook for monitoring
+- Implement range calculations from Exercise 5.3
+- Handle tick spacing correctly
+- Consider gas costs of rebalancing
+- Test with multiple pool fee tiers
+
+**Bonus Points**:
+- Add slippage protection
+- Implement emergency pause
+- Create UI for visualization
+- Deploy to testnet and verify
+
+---
+
+## Practice Tips
+
+1. **Start Simple**: Master tick conversions before Q64.96 math
+2. **Use Calculator**: Python/JavaScript for verifying calculations
+3. **Visualize**: Draw tick ranges to understand positions
+4. **Read Code**: Study Uniswap's TickMath library
+5. **Test Edge Cases**: Zero ticks, negative ticks, max values
+6. **Gas Awareness**: Some operations are expensive on-chain
+
+---
+
+## Additional Resources
+
+**Calculators & Tools**:
+- Uniswap V3/V4 Position Calculator: https://uniswap.org/calculator
+- Tick Math Playground: Build your own!
+- RareSkills sqrtPriceX96 tool: https://rareskills.io/post/uniswap-v3-sqrtpricex96
+
+**Practice Codebases**:
+- v4-core TickMath.sol: Study the source
+- v4-periphery examples: Real-world usage
+- Hook examples repository: See patterns
+
+---
+
+**Previous**: [Lesson 1 Exercises](./lesson-1-exercises.md)
+**Next**: Week 2 practice materials
