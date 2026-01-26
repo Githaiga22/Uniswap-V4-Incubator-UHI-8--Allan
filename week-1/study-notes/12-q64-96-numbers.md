@@ -326,3 +326,89 @@ function mulQ64_96(uint256 a, uint256 b)
 {
     return (a * b) / (2 ** 96);
 }
+
+// Divide two Q64.96 numbers
+function divQ64_96(uint256 a, uint256 b)
+    internal
+    pure
+    returns (uint256)
+{
+    return (a * (2 ** 96)) / b;
+}
+```
+
+---
+
+## Why Uniswap Uses Q64.96
+
+```
+REQUIREMENTS FOR DEX:
+1. High precision (many decimal places)
+2. No rounding errors
+3. Gas efficient
+4. Deterministic results
+
+Q64.96 ADVANTAGES:
+✅ Precision: 29 decimal places
+✅ Exact: Integer math = no rounding
+✅ Efficient: Bit shifts are cheap
+✅ Predictable: Same input = same output
+```
+
+---
+
+## Resources & Citations
+
+1. **RareSkills - Square Root Price in Uniswap V3**
+   https://rareskills.io/post/uniswap-v3-sqrtpricex96
+
+2. **Uniswap V3 Math Primer**
+   https://blog.uniswap.org/uniswap-v3-math-primer
+
+3. **Fixed-Point Numbers in Uniswap V3**
+   https://uniswapv3book.com/milestone_3/more-on-fixed-point-numbers.html
+
+4. **Q64.96 Security Tips for Hook Developers**
+   https://medium.com/@bloqarl/uniswaps-q64-96-explained-essential-security-tips-for-hook-developers-4bfc4afad2f7
+
+5. **TickMath Library Documentation**
+   https://docs.uniswap.org/contracts/v3/reference/core/libraries/TickMath
+
+---
+
+## Self-Check Questions
+
+1. **What does Q64.96 mean?**
+   <details>
+   <summary>Answer</summary>
+   64 bits for integer part, 96 bits for fractional part, totaling 160 bits.
+   </details>
+
+2. **Why can't Solidity use regular decimals?**
+   <details>
+   <summary>Answer</summary>
+   Solidity doesn't support floating-point numbers. Everything must be integers.
+   </details>
+
+3. **How do you convert decimal 5.0 to Q64.96?**
+   <details>
+   <summary>Answer</summary>
+   Multiply by 2^96: 5.0 × 2^96 = 396,140,812,571,321,687,967,719,751,680
+   </details>
+
+4. **What happens if you multiply two Q64.96 numbers without adjusting?**
+   <details>
+   <summary>Answer</summary>
+   The result is scaled by 2^192 instead of 2^96, giving wrong values. Must divide by 2^96.
+   </details>
+
+5. **Why 96 bits for the fractional part?**
+   <details>
+   <summary>Answer</summary>
+   Provides extremely high precision (29 decimal places) needed for accurate price calculations.
+   </details>
+
+---
+
+**Previous**: [Ticks Explained](./11-ticks-explained.md)
+**Next**: [sqrtPriceX96](./13-sqrtpricex96.md) - Square root price representation
