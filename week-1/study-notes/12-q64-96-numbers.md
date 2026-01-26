@@ -244,3 +244,85 @@ Must multiply by 2^96 to fix scale!
 **Scenario**: Calculate price in Uniswap pool
 
 ```
+Pool: ETH/USDC
+Reserve0 (ETH): 10 ETH
+Reserve1 (USDC): 10,000 USDC
+
+Human calculation:
+  price = 10,000 ÷ 10 = 1000 USDC per ETH
+
+Uniswap V4 calculation (Q64.96):
+
+Step 1: Convert reserves to Q64.96
+  reserve0_Q = 10 × 2^96
+  reserve1_Q = 10,000 × 2^96
+
+Step 2: Calculate price
+  price_Q = (reserve1_Q × 2^96) ÷ reserve0_Q
+  price_Q = (10,000 × 2^96 × 2^96) ÷ (10 × 2^96)
+  price_Q = 1000 × 2^96
+
+Step 3: Convert back to decimal
+  price = price_Q ÷ 2^96
+  price = 1000 USDC per ETH ✅
+```
+
+---
+
+## Common Pitfalls
+
+### Pitfall 1: Forgetting the Scale
+```
+❌ Wrong:
+  result = a_Q × b_Q
+  (Result is scaled by 2^192, not 2^96!)
+
+✅ Correct:
+  result = (a_Q × b_Q) ÷ 2^96
+```
+
+### Pitfall 2: Mixing Formats
+```
+❌ Wrong:
+  result = Q64_96_value + regular_decimal
+  (Can't mix formats!)
+
+✅ Correct:
+  regular_as_Q = regular_decimal × 2^96
+  result = Q64_96_value + regular_as_Q
+```
+
+### Pitfall 3: Overflow
+```
+❌ Risk:
+  huge_number × 2^96
+  (Might exceed 256 bits!)
+
+✅ Safety:
+  Check: value < 2^160 before converting
+  Use Solidity's SafeMath
+```
+
+---
+
+## Code Example
+
+```solidity
+// Convert decimal to Q64.96
+function toQ64_96(uint256 value) internal pure returns (uint256) {
+    return value * (2 ** 96);
+}
+
+// Convert Q64.96 to decimal
+function fromQ64_96(uint256 valueQ) internal pure returns (uint256) {
+    return valueQ / (2 ** 96);
+}
+
+// Multiply two Q64.96 numbers
+function mulQ64_96(uint256 a, uint256 b)
+    internal
+    pure
+    returns (uint256)
+{
+    return (a * b) / (2 ** 96);
+}
