@@ -358,3 +358,123 @@ Formula: Δy = L × (√P - √P_a)
 Δy = 847.1 × 5.991
 Δy ≈ 5,076 USDC
 ```
+
+**Answer**: You need approximately **5,076 USDC** to pair with your 2 ETH for this range.
+</details>
+
+---
+
+### Question 15
+**What's the maximum and minimum price a uint160 sqrtPriceX96 can represent?**
+
+<details>
+<summary>Answer</summary>
+
+**Maximum sqrtPriceX96**:
+```
+Max uint160 = 2^160 - 1
+           = 1,461,501,637,330,902,918,203,684,832,716,283,019,655,932,542,975
+
+Divide by 2^96 to get √P_max:
+√P_max ≈ 18,446,744,073,709,551,615
+
+Square to get P_max:
+P_max = (√P_max)^2
+P_max ≈ 3.4 × 10^38
+```
+
+**Minimum sqrtPriceX96**:
+```
+Min practical value (from TickMath):
+sqrtPriceX96_min = 4,295,128,739
+
+This represents:
+√P_min = 4,295,128,739 ÷ 2^96 ≈ 0.0000000542
+P_min ≈ 0.00000000000000294
+
+Or roughly 1.0001^(-887,272)
+```
+
+**Practical Range**:
+- Min tick: -887,272
+- Max tick: 887,272
+- This covers price ratios from ~10^-38 to ~10^38
+
+**Why this matters**: This range can handle essentially any realistic token price ratio, from fractions of a penny to millions of dollars.
+</details>
+
+---
+
+## Section 5: Hook Development Context (Advanced)
+
+### Question 16
+**You're building a limit order hook. How would you use ticks and sqrtPriceX96 to implement it?**
+
+<details>
+<summary>Answer</summary>
+
+**Architecture**:
+
+```solidity
+contract LimitOrderHook is BaseHook {
+    struct LimitOrder {
+        int24 targetTick;           // Tick where order executes
+        uint160 targetSqrtPriceX96; // Corresponding price
+        uint256 amountIn;           // Input token amount
+        bool zeroForOne;            // Swap direction
+    }
+
+    mapping(bytes32 => LimitOrder) public orders;
+
+    function afterSwap(
+        address,
+        PoolKey calldata key,
+        IPoolManager.SwapParams calldata,
+        BalanceDelta,
+        bytes calldata
+    ) external override returns (bytes4) {
+        // Get current pool price
+        (uint160 currentSqrtPriceX96,,) =
+            poolManager.getSlot0(key.toId());
+
+        // Check limit orders
+        bytes32[] memory orderIds = getActiveOrders(key.toId());
+
+        for (uint i = 0; i < orderIds.length; i++) {
+            LimitOrder memory order = orders[orderIds[i]];
+
+            // Check if target price reached
+            bool triggered = order.zeroForOne
+                ? currentSqrtPriceX96 <= order.targetSqrtPriceX96
+                : currentSqrtPriceX96 >= order.targetSqrtPriceX96;
+
+            if (triggered) {
+                executeOrder(orderIds[i], key);
+            }
+        }
+
+        return BaseHook.afterSwap.selector;
+    }
+}
+```
+
+**Key Concepts**:
+1. Store target tick/price for each order
+2. Monitor price in afterSwap hook
+3. Execute order when price crosses target
+4. Use sqrtPriceX96 for accurate price comparisons
+</details>
+
+---
+
+### Question 17
+**How would you calculate price impact using sqrtPriceX96 values?**
+
+<details>
+<summary>Answer</summary>
+
+```solidity
+function calculatePriceImpact(
+    uint160 sqrtPriceBefore,
+    uint160 sqrtPriceAfter
+) internal pure returns (uint256 impactBps) {
