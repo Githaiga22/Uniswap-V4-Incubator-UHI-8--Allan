@@ -154,3 +154,55 @@ Encoding: value × 2^96
 Decoding: value ÷ 2^96
 ```
 
+**Example**: `1.5` becomes `1.5 × 2^96 = 118,842,243,771,396,506,690,315,925,504`
+
+The precision (96 bits fractional) provides ~29 decimal places - more than sufficient for any token ratio.
+
+**Critical Detail**: When multiplying two Q64.96 numbers, you must divide by 2^96 to restore correct scaling. Forgetting this is a common bug pattern.
+
+### sqrtPriceX96 - Square Root Price
+
+Rather than storing price `P`, V4 stores `√P` in Q64.96 format.
+
+```
+Conversion Flow:
+Price (P)
+   ↓ Square root
+√P
+   ↓ × 2^96
+sqrtPriceX96
+```
+
+**Why square roots?**
+
+Liquidity calculations simplify dramatically:
+- Without √P: `L = Δx × Δy` (requires sqrt during calculation)
+- With √P: `L = Δx × √P` (direct multiplication)
+
+Gas savings compound across every swap and liquidity operation.
+
+### Practical Application
+
+Understanding these primitives is essential for hook development. Every hook interacts with:
+- **Ticks**: Reading position ranges, setting limits
+- **sqrtPriceX96**: Monitoring price changes, calculating slippage
+- **Q64.96**: Any custom price logic or calculations
+
+```
+Hook Development Flow:
+┌─────────────────────────┐
+│ Read pool.slot0()       │ → sqrtPriceX96, tick
+│ Convert to human price  │ → Understanding
+│ Implement logic         │ → Decision making
+│ Calculate limits        │ → Back to sqrtPriceX96
+│ Execute action          │ → PoolManager call
+└─────────────────────────┘
+```
+
+---
+
+## Key Insights
+
+**Architecture**:
+1. Singleton design enables cheap multi-pool operations
+2. Flash accounting + transient storage = minimal gas overhead
