@@ -478,3 +478,126 @@ function calculatePriceImpact(
     uint160 sqrtPriceBefore,
     uint160 sqrtPriceAfter
 ) internal pure returns (uint256 impactBps) {
+    // Convert sqrtPriceX96 to actual prices
+    // P = (sqrtPriceX96 / 2^96)^2
+    // Simplified: P = sqrtPriceX96^2 >> 192
+
+    uint256 priceBefore = uint256(sqrtPriceBefore) *
+                          uint256(sqrtPriceBefore) >> 192;
+    uint256 priceAfter = uint256(sqrtPriceAfter) *
+                         uint256(sqrtPriceAfter) >> 192;
+
+    // Calculate percentage change in basis points
+    // 1 basis point = 0.01%
+    if (priceAfter > priceBefore) {
+        impactBps = ((priceAfter - priceBefore) * 10000) / priceBefore;
+    } else {
+        impactBps = ((priceBefore - priceAfter) * 10000) / priceBefore;
+    }
+
+    return impactBps;
+}
+```
+
+**Example**:
+```
+Before swap: sqrtPriceX96 = 79,228,162,514,264,337,593,543,950,336 (price = 1.0)
+After swap:  sqrtPriceX96 = 79,624,032,857,396,899,778,338,925,568 (price ≈ 1.01)
+
+Price impact = 1% = 100 basis points
+```
+
+**Usage in Dynamic Fee Hook**:
+```solidity
+// Higher price impact = higher fees
+if (impactBps > 500) {  // > 5% impact
+    fee = 1000;  // 1% fee
+} else if (impactBps > 100) {  // > 1% impact
+    fee = 300;   // 0.3% fee
+} else {
+    fee = 50;    // 0.05% fee
+}
+```
+</details>
+
+---
+
+### Question 18
+**Why must you be careful about overflow when working with Q64.96 numbers?**
+
+<details>
+<summary>Answer</summary>
+
+**The Problem**:
+
+Q64.96 numbers are stored in uint160 (160 bits). When you multiply two Q64.96 numbers, you get:
+
+```
+a = value1 × 2^96  (160 bits)
+b = value2 × 2^96  (160 bits)
+
+a × b = value1 × value2 × 2^192  (can exceed 256 bits!)
+```
+
+**Overflow Risk Example**:
+```solidity
+uint160 largeNum = type(uint160).max;
+uint160 result = largeNum * largeNum;  // OVERFLOW! ❌
+```
+
+**Safe Patterns**:
+
+**Pattern 1**: Cast to uint256 before multiplication
+```solidity
+function mulQ64_96(uint160 a, uint160 b)
+    internal
+    pure
+    returns (uint160)
+{
+    return uint160((uint256(a) * uint256(b)) / (2 ** 96));
+}
+```
+
+**Pattern 2**: Check bounds before operations
+```solidity
+require(a <= type(uint160).max / b, "Overflow risk");
+```
+
+**Pattern 3**: Use Uniswap's libraries (already safe)
+```solidity
+import {FullMath} from "v4-core/libraries/FullMath.sol";
+
+uint256 result = FullMath.mulDiv(a, b, 2 ** 96);
+```
+
+**Real Impact**: Overflow bugs in price calculations can lead to:
+- Incorrect swap amounts
+- Drained liquidity pools
+- Loss of funds
+
+Always use safe math patterns when working with Q64.96!
+</details>
+
+---
+
+## Scoring Guide
+
+- **Section 1 (Q1-4)**: 4 points - Conceptual understanding
+- **Section 2 (Q5-8)**: 8 points - Calculations (2 points each)
+- **Section 3 (Q9-12)**: 16 points - Practical application (4 points each)
+- **Section 4 (Q13-15)**: 15 points - Advanced understanding (5 points each)
+- **Section 5 (Q16-18)**: 15 points - Hook development (5 points each)
+
+**Total**: 58 points
+
+**Grading**:
+- 50-58: Expert level - Ready for hook development
+- 40-49: Advanced - Strong understanding
+- 30-39: Intermediate - Good foundation
+- 20-29: Beginner - Review materials
+- < 20: Review lessons thoroughly
+
+---
+
+**Previous**: [Lesson 1 Quiz](./lesson-1-quiz.md)
+**Next**: Week 2 materials coming soon
