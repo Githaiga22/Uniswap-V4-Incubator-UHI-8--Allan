@@ -79,3 +79,84 @@ In blockchain, we need specific points:
 Price
   │
   │     ■
+  │
+  │   ■
+  │
+  │ ■
+  │      ■
+  └────────── Time
+
+Only specific tick prices exist
+Prices "jump" from tick to tick
+```
+
+**Why discrete?**
+- Computers need specific numbers to work with
+- Saves gas by not calculating infinite decimals
+- Creates predictable boundaries for liquidity
+
+---
+
+## Understanding Lower and Upper Ticks
+
+```
+LIQUIDITY POSITION EXAMPLE
+═══════════════════════════
+
+Current ETH Price: $1000
+
+Your Position:
+┌─────────────────────────────────────────┐
+│                                          │
+│  Tick Lower: -1000  Tick Upper: +1000   │
+│  (Price: $905)      (Price: $1105)      │
+│       │                    │             │
+│       ▼                    ▼             │
+│       ├────────────────────┤             │
+│       │   YOUR LIQUIDITY   │             │
+│       └────────────────────┘             │
+│              │                           │
+│              ▼                           │
+│        Active when price                 │
+│        $905 - $1105                      │
+│                                          │
+└─────────────────────────────────────────┘
+```
+
+### Tick Lower
+**Definition**: The minimum price boundary where your liquidity starts being active.
+
+```
+Below Tick Lower:
+  Price < $905
+
+  Your position: 100% Token1 (USDC)
+  Earning fees: NO ❌
+  Why: Price too low, all converted to USDC
+```
+
+### Tick Upper
+**Definition**: The maximum price boundary where your liquidity stops being active.
+
+```
+Above Tick Upper:
+  Price > $1105
+
+  Your position: 100% Token0 (ETH)
+  Earning fees: NO ❌
+  Why: Price too high, all converted to ETH
+```
+
+### In Range
+```
+Between Ticks:
+  $905 < Price < $1105
+
+  Your position: Mix of ETH and USDC
+  Earning fees: YES ✅
+  Why: Liquidity actively facilitating swaps
+```
+
+---
+
+## Tick Spacing
