@@ -160,3 +160,84 @@ Between Ticks:
 ---
 
 ## Tick Spacing
+
+**Definition**: The minimum distance between usable ticks, determined by pool fee tier.
+
+```
+FEE TIER → TICK SPACING
+═══════════════════════
+
+0.01% fee → Spacing: 1
+├─ Ticks: ..., -2, -1, 0, 1, 2, ...
+└─ Very tight, many options
+
+0.05% fee → Spacing: 10
+├─ Ticks: ..., -20, -10, 0, 10, 20, ...
+└─ Medium spacing
+
+0.30% fee → Spacing: 60
+├─ Ticks: ..., -120, -60, 0, 60, 120, ...
+└─ Wider spacing
+
+1.00% fee → Spacing: 200
+├─ Ticks: ..., -400, -200, 0, 200, 400, ...
+└─ Very wide spacing
+```
+
+**Why does this matter?**
+- Lower fees = tighter control (stable pairs like USDC/USDT)
+- Higher fees = wider ranges (volatile pairs like ETH/SHIB)
+
+---
+
+## Calculating Prices from Ticks
+
+### The Magic Formula
+
+```
+price = 1.0001^tick
+```
+
+**Each tick represents 0.01% price change**
+
+### Examples
+
+```
+Tick = 0:
+  price = 1.0001^0 = 1
+  (1 Token0 = 1 Token1)
+
+Tick = 100:
+  price = 1.0001^100 ≈ 1.01005
+  (1% price increase)
+
+Tick = -100:
+  price = 1.0001^(-100) ≈ 0.99005
+  (1% price decrease)
+
+Tick = 10000:
+  price = 1.0001^10000 ≈ 2.7183
+  (e, the mathematical constant!)
+```
+
+---
+
+## Visual: Tick to Price Conversion
+
+```
+TICK NUMBER → PRICE
+═══════════════════
+
+Negative Ticks (Price < 1):
+  -10000 │ $0.37
+  -5000  │ $0.61
+  -1000  │ $0.905
+     -1  │ $0.99990
+
+Zero Tick (Price = 1):
+      0  │ $1.00
+
+Positive Ticks (Price > 1):
+     +1  │ $1.00010
+  +1000  │ $1.105
+  +5000  │ $1.649
