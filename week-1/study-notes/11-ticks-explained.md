@@ -322,3 +322,88 @@ Result: 19× more capital efficient! 🦄
 
 ## Common Tick Mistakes
 
+### Mistake 1: Range Too Narrow
+```
+Range: $999 - $1001 (2 ticks apart)
+
+Problem:
+  Price moves $1 → You're out of range
+  Must constantly rebalance
+  High gas costs
+```
+
+### Mistake 2: Range Too Wide
+```
+Range: $500 - $2000 (many ticks)
+
+Problem:
+  Almost same as V2
+  Not taking advantage of concentration
+  Lower fee earnings
+```
+
+### Mistake 3: Ignoring Tick Spacing
+```
+You want: Tick 157
+Pool spacing: 60
+
+Error! Invalid tick
+Must use: Tick 120 or 180
+```
+
+---
+
+## Resources & Citations
+
+1. **Uniswap Concentrated Liquidity Documentation**
+   https://docs.uniswap.org/concepts/protocol/concentrated-liquidity
+
+2. **Understanding Ticks - Uniswap Support**
+   https://support.uniswap.org/hc/en-us/articles/21069524840589-What-is-a-tick-when-providing-liquidity
+
+3. **Ticks and Price Precision**
+   https://medium.com/@emmanuelomemgboji/ticks-prices-and-q64-96-the-precision-machinery-of-uniswap-v3-v4-4c22dce3c9df
+
+4. **Cyfrin Updraft - Ticks Review**
+   https://updraft.cyfrin.io/courses/uniswap-v4/hooks/review-of-liquidity-and-ticks
+
+5. **QuillAudits - Liquidity Mechanics in V4**
+   https://www.quillaudits.com/research/uniswap-development/uniswap-v4/liquidity-mechanics-in-uniswap-v4-core
+
+---
+
+## Self-Check Questions
+
+1. **What is a tick?**
+   <details>
+   <summary>Answer</summary>
+   A discrete price boundary representing a 0.01% price change, used to mark where liquidity positions can be placed.
+   </details>
+
+2. **Why are prices discrete instead of continuous?**
+   <details>
+   <summary>Answer</summary>
+   Computers need specific numbers to calculate with efficiently. Discrete ticks save gas and create predictable boundaries.
+   </details>
+
+3. **What happens when price is below your lower tick?**
+   <details>
+   <summary>Answer</summary>
+   Your entire position converts to Token1 (quote token) and you stop earning fees.
+   </details>
+
+4. **How do you calculate price from a tick?**
+   <details>
+   <summary>Answer</summary>
+   price = 1.0001^tick
+   </details>
+
+5. **What is tick spacing?**
+   <details>
+   <summary>Answer</summary>
+   The minimum distance between valid ticks, determined by the pool's fee tier.
+   </details>
+
+---
+
+**Next**: [Q64.96 Numbers](./12-q64-96-numbers.md) - Understanding fixed-point arithmetic
