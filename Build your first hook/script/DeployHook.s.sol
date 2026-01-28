@@ -14,3 +14,11 @@ import {MyFirstHook} from "../src/examples/MyFirstHook.sol";
 import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
 import {Hooks} from "@uniswap/v4-core/src/libraries/Hooks.sol";
 
+contract DeployHook is Script {
+    function run() external {
+        // Replace this with the actual PoolManager address for your network
+        // Sepolia: 0x8C4BcBE6b9eF47855f97E675296FA3F6fafa5F1A
+        // For local testing, you'll deploy PoolManager first
+        address poolManager = vm.envAddress("POOL_MANAGER_ADDRESS");
+
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
