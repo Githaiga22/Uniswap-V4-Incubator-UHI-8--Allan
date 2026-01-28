@@ -580,3 +580,197 @@ Visual:
 ┌─────────────────────────────────────┐
 │  Before swap:                       │
 │  swapCount[poolId] = 5              │
+│  ┌─────┬─────┬─────┬─────┬─────┐   │
+│  │  ■  │  ■  │  ■  │  ■  │  ■  │   │
+│  └─────┴─────┴─────┴─────┴─────┘   │
+└─────────────────────────────────────┘
+           │
+           ▼
+┌─────────────────────────────────────┐
+│  After swap:                        │
+│  swapCount[poolId] = 6              │
+│  ┌─────┬─────┬─────┬─────┬─────┬───┐│
+│  │  ■  │  ■  │  ■  │  ■  │  ■  │ ■ ││
+│  └─────┴─────┴─────┴─────┴─────┴───┘│
+└─────────────────────────────────────┘
+```
+
+**Return Values:**
+
+```
+return (BaseHook.afterSwap.selector, 0);
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^  ^
+        |                             |
+        Confirmation signature        Fee adjustment (0 = none)
+```
+
+---
+
+## PointsHook - Line by Line
+
+Now let's look at the more advanced `PointsHook.sol`.
+
+### Key Differences from MyFirstHook
+
+```
+┌────────────────────────────────────────────────────────┐
+│  MyFirstHook vs PointsHook                             │
+├────────────────────────────────────────────────────────┤
+│                                                        │
+│  MyFirstHook:                                          │
+│  • Counts swaps per pool                               │
+│  • Simple counter                                      │
+│  • No user tracking                                    │
+│  • Beginner-friendly                                   │
+│                                                        │
+│  PointsHook:                                           │
+│  • Awards points to users                              │
+│  • Tracks per user per pool                            │
+│  • Multiple hook functions                             │
+│  • Includes view functions for queries                 │
+│  • Production-ready pattern                            │
+└────────────────────────────────────────────────────────┘
+```
+
+### State Variables
+
+```solidity
+mapping(address => mapping(PoolId => uint256)) public userPoints;
+```
+
+```
+┌──────────────────────────────────────────────────────────┐
+│  Nested Mapping = Spreadsheet                            │
+│                                                          │
+│                Pool ABC    Pool DEF    Pool XYZ          │
+│              ┌───────────┬───────────┬───────────┐       │
+│  Alice       │    100    │     50    │     0     │       │
+│  Bob         │     75    │    200    │    10     │       │
+│  Charlie     │      0    │     30    │   150     │       │
+│              └───────────┴───────────┴───────────┘       │
+│                                                          │
+│  How to read it:                                         │
+│  userPoints[Alice][poolABC] = 100                        │
+│  userPoints[Bob][poolDEF] = 200                          │
+│  userPoints[Charlie][poolXYZ] = 150                      │
+│                                                          │
+│  Like a game where each player has separate scores       │
+│  for each level:                                         │
+│  Player 1: Level 1 (100 pts), Level 2 (50 pts)          │
+│  Player 2: Level 1 (75 pts), Level 2 (200 pts)          │
+└──────────────────────────────────────────────────────────┘
+```
+
+```solidity
+mapping(PoolId => uint256) public totalSwaps;
+mapping(PoolId => uint256) public totalLiquidityOps;
+```
+
+**Simple counters per pool:**
+
+```
+┌─────────────────────────────────────┐
+│  Pool Statistics                    │
+│                                     │
+│  Pool ABC:                          │
+│  • totalSwaps = 543                 │
+│  • totalLiquidityOps = 42           │
+│                                     │
+│  Pool DEF:                          │
+│  • totalSwaps = 1,234               │
+│  • totalLiquidityOps = 67           │
+│                                     │
+│  Like a restaurant keeping track:   │
+│  • Total orders served: 543         │
+│  • Total supplier deliveries: 42    │
+└─────────────────────────────────────┘
+```
+
+### Constants
+
+```solidity
+uint256 public constant POINTS_PER_SWAP = 10;
+uint256 public constant POINTS_PER_LIQUIDITY = 50;
+```
+
+```
+┌──────────────────────────────────────────────┐
+│  constant = Fixed value, never changes       │
+│                                              │
+│  Benefits:                                   │
+│  1. Gas efficient (compiler replaces it)     │
+│  2. Clear naming (POINTS_PER_SWAP vs 10)     │
+│  3. Easy to update (change in one place)     │
+│  4. Can't be accidentally modified           │
+│                                              │
+│  Like:                                       │
+│  const TAX_RATE = 0.08;                      │
+│  vs                                          │
+│  mysteriously using 0.08 everywhere          │
+└──────────────────────────────────────────────┘
+```
+
+### The _afterSwap Function
+
+```solidity
+function _afterSwap(
+    address sender,
+    PoolKey calldata key,
+    SwapParams calldata params,
+    BalanceDelta delta,
+    bytes calldata hookData
+) internal override returns (bytes4, int128) {
+    PoolId poolId = key.toId();
+    userPoints[sender][poolId] += POINTS_PER_SWAP;
+    totalSwaps[poolId]++;
+    return (BaseHook.afterSwap.selector, 0);
+}
+```
+
+**Flow Diagram:**
+
+```
+┌────────────────────────────────────────────────────┐
+│  Alice swaps in Pool ABC                           │
+└──────────┬─────────────────────────────────────────┘
+           │
+           ▼
+┌────────────────────────────────────────────────────┐
+│  1. PoolId poolId = key.toId();                    │
+│     → poolId = 0xABC123...                         │
+└──────────┬─────────────────────────────────────────┘
+           │
+           ▼
+┌────────────────────────────────────────────────────┐
+│  2. userPoints[sender][poolId] += 10;              │
+│     → userPoints[Alice][0xABC] += 10               │
+│                                                    │
+│     Before: Alice has 50 points in Pool ABC        │
+│     After:  Alice has 60 points in Pool ABC        │
+│                                                    │
+│     ┌───────────────────────────┐                 │
+│     │  Alice's Wallet           │                 │
+│     │  Pool ABC Points: 50→60   │                 │
+│     └───────────────────────────┘                 │
+└──────────┬─────────────────────────────────────────┘
+           │
+           ▼
+┌────────────────────────────────────────────────────┐
+│  3. totalSwaps[poolId]++;                          │
+│     → totalSwaps[0xABC]++                          │
+│                                                    │
+│     Before: 543 total swaps                        │
+│     After:  544 total swaps                        │
+│                                                    │
+│     ┌───────────────────────────┐                 │
+│     │  Pool ABC Statistics      │                 │
+│     │  Total Swaps: 543→544     │                 │
+│     └───────────────────────────┘                 │
+└──────────┬─────────────────────────────────────────┘
+           │
+           ▼
+┌────────────────────────────────────────────────────┐
+│  4. return (BaseHook.afterSwap.selector, 0);       │
+│     → "Successfully executed, no fee changes"      │
+└────────────────────────────────────────────────────┘
+```
