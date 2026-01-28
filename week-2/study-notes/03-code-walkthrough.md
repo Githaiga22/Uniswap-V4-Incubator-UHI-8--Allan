@@ -192,3 +192,197 @@ import {PoolId, PoolIdLibrary} from "@uniswap/v4-core/src/types/PoolId.sol";
 import {BalanceDelta} from "@uniswap/v4-core/src/types/BalanceDelta.sol";
 ```
 
+**What it is:** Tracks how token balances changed.
+
+```
+┌─────────────────────────────────────────┐
+│  BalanceDelta = Change in Balance       │
+│                                         │
+│  Before swap:                           │
+│  Pool has: 100 TokenA, 100 TokenB       │
+│                                         │
+│  User swaps: 10 TokenA → ??? TokenB     │
+│                                         │
+│  After swap:                            │
+│  Pool has: 110 TokenA, 90 TokenB        │
+│                                         │
+│  BalanceDelta:                          │
+│  • amount0 = +10 (received TokenA)      │
+│  • amount1 = -10 (sent TokenB)          │
+│                                         │
+│  Like a bank statement showing:         │
+│  Deposit: +$10                          │
+│  Withdrawal: -$10                       │
+└─────────────────────────────────────────┘
+```
+
+```solidity
+import {BeforeSwapDelta, BeforeSwapDeltaLibrary} from "@uniswap/v4-core/src/types/BeforeSwapDelta.sol";
+import {SwapParams} from "@uniswap/v4-core/src/types/PoolOperation.sol";
+```
+
+**What they are:** Types for swap operations.
+
+---
+
+### The Contract Declaration
+
+```solidity
+contract MyFirstHook is BaseHook {
+```
+
+```
+┌──────────────────────────────────────────────┐
+│  Inheritance Diagram                         │
+│                                              │
+│     BaseHook (Parent class)                  │
+│         ↑                                    │
+│         │ inherits from                      │
+│         │                                    │
+│    MyFirstHook (Child class)                 │
+│                                              │
+│  MyFirstHook gets all the powers of BaseHook │
+│  + adds its own custom logic                 │
+│                                              │
+│  Like: Tesla Model 3 IS A Car               │
+│        └─ Has all car features               │
+│        └─ Plus electric motor, autopilot     │
+└──────────────────────────────────────────────┘
+```
+
+---
+
+### Using the Library
+
+```solidity
+using PoolIdLibrary for PoolKey;
+```
+
+**What this does:** Adds helper functions to PoolKey type.
+
+```
+┌──────────────────────────────────────────────┐
+│  "using" = Adding Methods                    │
+│                                              │
+│  Before:                                     │
+│  PoolId id = PoolIdLibrary.toId(key);        │
+│              ^^^^^^^^^^^^^^^^                │
+│              (Long, verbose)                 │
+│                                              │
+│  After:                                      │
+│  PoolId id = key.toId();                     │
+│              ^^^^^^^^                        │
+│              (Short, clean!)                 │
+│                                              │
+│  Analogy:                                    │
+│  Before: "Please convert this address        │
+│           to a zip code using the            │
+│           ZipCodeLibrary"                    │
+│  After:  "Address, give me your zip code"   │
+│          (Direct, like a method call)        │
+└──────────────────────────────────────────────┘
+```
+
+---
+
+### State Variables
+
+```solidity
+// State variables
+mapping(PoolId => uint256) public swapCount;
+```
+
+```
+┌──────────────────────────────────────────────────┐
+│  Mapping = Dictionary / Phonebook                │
+│                                                  │
+│  Structure:                                      │
+│  ┌───────────┬──────────┐                       │
+│  │ PoolId    │ Count    │                       │
+│  ├───────────┼──────────┤                       │
+│  │ 0xABC...  │    5     │ ← Pool ABC had 5 swaps│
+│  │ 0xDEF...  │   12     │ ← Pool DEF had 12     │
+│  │ 0x123...  │    0     │ ← Pool 123 had none   │
+│  └───────────┴──────────┘                       │
+│                                                  │
+│  Usage:                                          │
+│  swapCount[poolId] = 10;    // Set              │
+│  uint256 count = swapCount[poolId]; // Get      │
+│  swapCount[poolId]++;       // Increment        │
+│                                                  │
+│  Analogy:                                        │
+│  Like counting how many times each restaurant    │
+│  served customers:                               │
+│  Restaurant A: 50 customers today                │
+│  Restaurant B: 33 customers today                │
+└──────────────────────────────────────────────────┘
+```
+
+**Why `public`?**
+```
+public = Automatically creates a getter function
+
+// You can call from outside:
+uint256 count = myHook.swapCount(poolId);
+
+// Compiler creates this for you:
+function swapCount(PoolId poolId) public view returns (uint256) {
+    return _swapCount[poolId];
+}
+```
+
+---
+
+### Constructor
+
+```solidity
+constructor(IPoolManager _poolManager) BaseHook(_poolManager) {}
+```
+
+```
+┌──────────────────────────────────────────────────────┐
+│  Constructor = Birth Certificate                     │
+│                                                      │
+│  What happens when contract is deployed:             │
+│                                                      │
+│  Step 1: Deploy with address of PoolManager          │
+│          new MyFirstHook(0xPoolManager...)           │
+│                          ^^^^^^^^^^^                 │
+│                          This address                │
+│                                                      │
+│  Step 2: Pass it to parent (BaseHook)                │
+│          BaseHook(_poolManager)                      │
+│          ^^^^^^^^^^^^^^^^^^^^^^                      │
+│          Parent stores this address                  │
+│                                                      │
+│  Step 3: BaseHook validates the address              │
+│          "Does this hook address have the            │
+│           correct permission bits?"                  │
+│                                                      │
+│  Like:                                               │
+│  1. Baby is born (contract deployed)                 │
+│  2. Parents register the birth (pass to BaseHook)    │
+│  3. Hospital checks paperwork (validates permissions)│
+└──────────────────────────────────────────────────────┘
+```
+
+---
+
+### Hook Permissions
+
+```solidity
+function getHookPermissions() public pure override returns (Hooks.Permissions memory) {
+    return Hooks.Permissions({
+        beforeInitialize: false,
+        afterInitialize: false,
+        beforeAddLiquidity: false,
+        afterAddLiquidity: false,
+        beforeRemoveLiquidity: false,
+        afterRemoveLiquidity: false,
+        beforeSwap: true,    // ← We implement this!
+        afterSwap: true,     // ← We implement this!
+        beforeDonate: false,
+        afterDonate: false,
+        beforeSwapReturnDelta: false,
+        afterSwapReturnDelta: false,
+        afterAddLiquidityReturnDelta: false,
