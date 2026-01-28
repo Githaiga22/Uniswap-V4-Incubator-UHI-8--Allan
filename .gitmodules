@@ -1,0 +1,3 @@
+[submodule "Build your first hook/lib/forge-std"]
+	path = Build your first hook/lib/forge-std
+	url = https://github.com/foundry-rs/forge-std
