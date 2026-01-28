@@ -52,3 +52,21 @@ contract PointsHook is BaseHook {
         address sender,
         PoolKey calldata key,
         SwapParams calldata params,
+        BalanceDelta delta,
+        bytes calldata hookData
+    ) internal override returns (bytes4, int128) {
+        PoolId poolId = key.toId();
+        userPoints[sender][poolId] += POINTS_PER_SWAP;
+        totalSwaps[poolId]++;
+
+        return (BaseHook.afterSwap.selector, 0);
+    }
+
+    function _afterAddLiquidity(
+        address sender,
+        PoolKey calldata key,
+        ModifyLiquidityParams calldata params,
+        BalanceDelta delta,
+        BalanceDelta feesAccrued,
+        bytes calldata hookData
+    ) internal override returns (bytes4, BalanceDelta) {
