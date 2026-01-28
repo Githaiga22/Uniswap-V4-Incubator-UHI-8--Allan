@@ -52,3 +52,21 @@ contract MyFirstHookTest is Test, Deployers {
             SQRT_PRICE_1_1 // initial price 1:1
         );
 
+        // Add liquidity
+        modifyLiquidityRouter.modifyLiquidity(
+            key,
+            ModifyLiquidityParams({
+                tickLower: -60,
+                tickUpper: 60,
+                liquidityDelta: 10 ether,
+                salt: bytes32(0)
+            }),
+            ZERO_BYTES
+        );
+    }
+
+    function testSwapIncreasesCounter() public {
+        // Get initial swap count
+        uint256 initialCount = hook.swapCount(key.toId());
+
+        // Perform a swap
