@@ -116,3 +116,62 @@ contract PointsHookTest is Test, Deployers {
         int256 amountSpecified = -1e18; // Exact input of 1 token
         swap(key, zeroForOne, amountSpecified, ZERO_BYTES);
 
+        vm.stopPrank(); // Stop impersonating alice
+
+        // Check that points were awarded
+        uint256 finalPoints = hook.getPoints(alice, poolId);
+        assertEq(finalPoints, hook.POINTS_PER_SWAP(), "Alice should have earned POINTS_PER_SWAP points");
+
+        // Check that swap counter increased
+        assertEq(hook.getSwapCount(poolId), 1, "Swap count should be 1");
+
+        // Log results for visibility
+        console.log("Alice's points after swap:", finalPoints);
+    }
+
+    /**
+     * @notice Test that adding liquidity awards points
+     * @dev Adding liquidity should award more points than swapping
+     */
+    function testAddLiquidityAwardsPoints() public {
+        PoolId poolId = key.toId();
+
+        // Check initial points
+        uint256 initialPoints = hook.getPoints(bob, poolId);
+        assertEq(initialPoints, 0, "Bob should start with 0 points");
+
+        // Bob adds liquidity
+        vm.startPrank(bob);
+
+        modifyLiquidityRouter.modifyLiquidity(
+            key,
+            ModifyLiquidityParams({
+                tickLower: -120,
+                tickUpper: 120,
+                liquidityDelta: 5 ether, // Bob adds 5 ETH of liquidity
+                salt: bytes32(0)
+            }),
+            ZERO_BYTES
+        );
+
+        vm.stopPrank();
+
+        // Check points awarded
+        uint256 finalPoints = hook.getPoints(bob, poolId);
+        assertEq(finalPoints, hook.POINTS_PER_LIQUIDITY(), "Bob should have earned POINTS_PER_LIQUIDITY points");
+
+        // Verify it's more than swap points
+        assertGt(hook.POINTS_PER_LIQUIDITY(), hook.POINTS_PER_SWAP(), "Liquidity should earn more points than swaps");
+
+        // Check liquidity op counter
+        assertEq(hook.getLiquidityOpCount(poolId), 2, "Should have 2 liquidity ops (setUp + this test)");
+
+        console.log("Bob's points after adding liquidity:", finalPoints);
+    }
+
+    /**
+     * @notice Test multiple swaps accumulate points
+     * @dev Points should stack up with each swap
+     */
+    function testMultipleSwapsAccumulatePoints() public {
+        PoolId poolId = key.toId();
