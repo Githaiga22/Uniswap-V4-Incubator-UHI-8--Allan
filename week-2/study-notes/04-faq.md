@@ -918,3 +918,463 @@ GOOD README INCLUDES:
 │ 4. Architecture diagrams                │
 │ 5. Known limitations                    │
 │ 6. Contact info / how to contribute     │
+│ 7. License information                  │
+│ 8. Deployment addresses (if applicable) │
+└─────────────────────────────────────────┘
+```
+
+**Remember:** Open source doesn't mean giving up control. You decide:
+- What license to use
+- When to publish
+- What information to include
+- How to handle contributions
+
+---
+
+## Question 6: Account Abstraction and msg.sender
+### "A different user could sponsor someone else's transaction through account abstraction. This means msg.sender isn't reliable, right?"
+
+**Excellent question!** You're absolutely correct to think about this. Let's break down the nuance.
+
+### 🎭 The Account Abstraction Problem
+
+```
+TRADITIONAL TRANSACTION:
+┌─────────────────────────────────────────────────┐
+│  Alice (EOA)                                    │
+│  0xAlice...                                     │
+└──────────┬──────────────────────────────────────┘
+           │ signs & pays gas
+           ▼
+┌─────────────────────────────────────────────────┐
+│  PoolManager.swap()                             │
+│  msg.sender = 0xAlice                           │
+└──────────┬──────────────────────────────────────┘
+           │
+           ▼
+┌─────────────────────────────────────────────────┐
+│  Hook._afterSwap()                              │
+│  sender parameter = 0xAlice ✓                   │
+│  Award points to 0xAlice ✓                      │
+└─────────────────────────────────────────────────┘
+```
+
+```
+WITH ACCOUNT ABSTRACTION:
+┌─────────────────────────────────────────────────┐
+│  Bob (EOA) - Paying gas                         │
+│  0xBob...                                       │
+└──────────┬──────────────────────────────────────┘
+           │ sponsors transaction
+           ▼
+┌─────────────────────────────────────────────────┐
+│  Alice's Smart Wallet                           │
+│  0xAliceWallet...                               │
+└──────────┬──────────────────────────────────────┘
+           │ executes on behalf of Alice
+           ▼
+┌─────────────────────────────────────────────────┐
+│  PoolManager.swap()                             │
+│  msg.sender = 0xAliceWallet (not 0xAlice!)      │
+└──────────┬──────────────────────────────────────┘
+           │
+           ▼
+┌─────────────────────────────────────────────────┐
+│  Hook._afterSwap()                              │
+│  sender parameter = 0xAliceWallet               │
+│  Award points to 0xAliceWallet ✓                │
+│  (This is actually correct!)                    │
+└─────────────────────────────────────────────────┘
+```
+
+### 🎯 The Truth About sender in Uniswap v4 Hooks
+
+**Key Insight:** The `sender` parameter in hook callbacks is NOT `msg.sender`!
+
+```solidity
+function _afterSwap(
+    address sender,  // ← This is the ORIGINAL caller, not msg.sender!
+    PoolKey calldata key,
+    SwapParams calldata params,
+    BalanceDelta delta,
+    bytes calldata hookData
+) internal override returns (bytes4, int128) {
+    // sender = the address that initiated the swap with PoolManager
+    // This is already the smart wallet address in AA scenarios
+    userPoints[sender][poolId] += POINTS_PER_SWAP;
+}
+```
+
+### 📊 Visual Comparison
+
+```
+WHAT YOU MIGHT THINK HAPPENS:
+msg.sender = Bob (sponsor)      ← ❌ Wrong!
+Award points to Bob             ← ❌ Wrong!
+
+WHAT ACTUALLY HAPPENS:
+sender param = Alice's Wallet   ← ✅ Correct!
+Award points to Alice's Wallet  ← ✅ Correct!
+```
+
+### Why This Works
+
+Uniswap v4's PoolManager tracks who called it:
+
+```solidity
+// Simplified PoolManager logic
+function swap(PoolKey memory key, SwapParams memory params) external {
+    address caller = msg.sender; // Could be EOA or smart wallet
+
+    // ... perform swap ...
+
+    // Pass the CALLER to the hook, not msg.sender inside the hook
+    IHooks(key.hooks).afterSwap(
+        caller,  // ← The actual swapper
+        key,
+        params,
+        delta,
+        hookData
+    );
+}
+```
+
+### 🤔 When Should You Care About This?
+
+**Scenario 1: Tracking "Users"**
+
+If you want to track actual users (not just wallet addresses):
+
+```solidity
+// This works! Smart wallets are the "user" in v4
+function _afterSwap(
+    address sender,  // This is the smart wallet address
+    ...
+) internal override returns (bytes4, int128) {
+    userPoints[sender][poolId] += POINTS_PER_SWAP;
+    // If Alice uses wallet 0xABC, points go to 0xABC ✓
+    // If Alice later uses wallet 0xDEF, that's a different "user"
+    return (BaseHook.afterSwap.selector, 0);
+}
+```
+
+**Scenario 2: Real Identity Tracking (Advanced)**
+
+If you need to link smart wallets to real identities:
+
+```solidity
+// Option A: Use a registry
+mapping(address => address) public smartWalletToOwner;
+
+function registerWallet(address owner) external {
+    smartWalletToOwner[msg.sender] = owner;
+}
+
+function _afterSwap(address sender, ...) internal override returns (bytes4, int128) {
+    address realOwner = smartWalletToOwner[sender];
+    if (realOwner != address(0)) {
+        userPoints[realOwner][poolId] += POINTS_PER_SWAP;
+    } else {
+        userPoints[sender][poolId] += POINTS_PER_SWAP;
+    }
+    return (BaseHook.afterSwap.selector, 0);
+}
+```
+
+**Scenario 3: Integrating with ERC-6551 (Token Bound Accounts)**
+
+```solidity
+// If using token-bound accounts:
+interface IERC6551Registry {
+    function account(address implementation, uint256 chainId, address tokenContract, uint256 tokenId, uint256 salt) external view returns (address);
+}
+
+function getTokenOwner(address accountAddress) internal view returns (address) {
+    // Query the NFT that owns this account...
+}
+```
+
+### 🎮 Real-World Example: Gaming Hook
+
+```solidity
+/**
+ * Scenario: Game rewards players for trading in-game assets
+ * Players use smart wallets (AA) for better UX
+ */
+contract GamingHook is BaseHook {
+    // Map smart wallets to player IDs
+    mapping(address => uint256) public walletToPlayerId;
+
+    function registerPlayer(uint256 playerId) external {
+        walletToPlayerId[msg.sender] = playerId;
+    }
+
+    function _afterSwap(address sender, ...) internal override returns (bytes4, int128) {
+        uint256 playerId = walletToPlayerId[sender];
+
+        if (playerId != 0) {
+            // Award to specific player
+            playerPoints[playerId] += POINTS_PER_SWAP;
+        } else {
+            // Award to wallet address (unregistered user)
+            walletPoints[sender] += POINTS_PER_SWAP;
+        }
+
+        return (BaseHook.afterSwap.selector, 0);
+    }
+}
+```
+
+### Summary
+
+```
+┌────────────────────────────────────────────────────────┐
+│  KEY POINTS:                                           │
+│                                                        │
+│  ✓ The 'sender' parameter is reliable                 │
+│  ✓ It represents the address that called PoolManager  │
+│  ✓ In AA scenarios, it's the smart wallet address     │
+│  ✓ This is usually what you want!                     │
+│                                                        │
+│  Only worry about "real" identity if you need to:     │
+│  • Link multiple wallets to one user                  │
+│  • Integrate with existing identity systems           │
+│  • Implement cross-wallet features                    │
+│                                                        │
+│  Default behavior (tracking by sender) works for:     │
+│  • Point systems ✓                                    │
+│  • Access control ✓                                   │
+│  • Fee tracking ✓                                     │
+│  • Volume statistics ✓                                │
+└────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Question 7: Understanding hookData
+### "I don't really understand hookData. What does it contain exactly? Can you give specific examples?"
+
+**Great question!** `hookData` is one of the most flexible and powerful features of Uniswap v4 hooks.
+
+### 🎁 What is hookData?
+
+```
+hookData = Custom data passed from the caller to your hook
+
+┌──────────────────────────────────────────┐
+│  User calls:                             │
+│  router.swap(key, params, "some data")   │
+│                            ^^^^^^^^^^^    │
+│                            This becomes   │
+│                            hookData!      │
+└──────────────┬───────────────────────────┘
+               │
+               ▼
+┌──────────────────────────────────────────┐
+│  PoolManager forwards it:                │
+│  hook.afterSwap(..., "some data")        │
+│                       ^^^^^^^^^^^         │
+└──────────────┬───────────────────────────┘
+               │
+               ▼
+┌──────────────────────────────────────────┐
+│  Your hook receives it:                  │
+│  function _afterSwap(                    │
+│      address sender,                     │
+│      PoolKey calldata key,               │
+│      SwapParams calldata params,         │
+│      BalanceDelta delta,                 │
+│      bytes calldata hookData  ← HERE!    │
+│  )                                       │
+└──────────────────────────────────────────┘
+```
+
+### 📦 Think of hookData as a Package
+
+```
+┌──────────────────────────────────────────────────────┐
+│                                                      │
+│         📦  PACKAGE (hookData)                       │
+│                                                      │
+│  "Dear Hook,                                         │
+│   Here's some extra info about this transaction:    │
+│   - Referrer address: 0xBob                          │
+│   - Promo code: "SUMMER2024"                         │
+│   - User preference: dark mode                       │
+│   - Whatever else we want to tell you!"              │
+│                                                      │
+│  Sender can pack ANYTHING in here!                   │
+│  Hook can read and act on it!                        │
+└──────────────────────────────────────────────────────┘
+```
+
+### 🔧 Example 1: Referral System
+
+**Use Case:** Track who referred each user, award bonus points.
+
+```solidity
+// In your hook:
+function _afterSwap(
+    address sender,
+    PoolKey calldata key,
+    SwapParams calldata params,
+    BalanceDelta delta,
+    bytes calldata hookData
+) internal override returns (bytes4, int128) {
+    PoolId poolId = key.toId();
+
+    // Decode the hookData to get referrer address
+    address referrer = address(0);
+
+    if (hookData.length >= 20) {
+        // First 20 bytes = address of referrer
+        referrer = address(bytes20(hookData[0:20]));
+    }
+
+    // Award points to swapper
+    userPoints[sender][poolId] += POINTS_PER_SWAP;
+
+    // Award bonus points to referrer
+    if (referrer != address(0) && referrer != sender) {
+        userPoints[referrer][poolId] += REFERRAL_BONUS; // 5 extra points!
+    }
+
+    return (BaseHook.afterSwap.selector, 0);
+}
+
+// How a user calls it:
+// router.swap(key, swapParams, abi.encodePacked(referrerAddress));
+//                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+//                              This becomes hookData!
+```
+
+**User Flow:**
+```solidity
+// Alice was referred by Bob
+address bob = 0xBob...;
+
+// When Alice swaps, she passes Bob's address in hookData:
+bytes memory hookData = abi.encodePacked(bob);
+router.swap(poolKey, swapParams, hookData);
+
+// Result:
+// Alice gets 10 points
+// Bob gets 5 points (referral bonus!)
+```
+
+### 🔧 Example 2: Discount Codes
+
+**Use Case:** Apply discount if user provides valid promo code.
+
+```solidity
+contract DiscountHook is BaseHook {
+    mapping(bytes32 => uint256) public promoCodeDiscounts; // code => discount %
+
+    constructor(IPoolManager _poolManager) BaseHook(_poolManager) {
+        // Set up promo codes
+        promoCodeDiscounts[keccak256("SUMMER2024")] = 50; // 50% off
+        promoCodeDiscounts[keccak256("NEWUSER")] = 80;    // 80% off
+    }
+
+    function _beforeSwap(
+        address sender,
+        PoolKey calldata key,
+        SwapParams calldata params,
+        bytes calldata hookData
+    ) internal override returns (bytes4, BeforeSwapDelta, uint24) {
+        uint24 feeOverride = key.fee; // Default fee
+
+        // Check if promo code provided
+        if (hookData.length > 0) {
+            bytes32 codeHash = keccak256(hookData);
+            uint256 discount = promoCodeDiscounts[codeHash];
+
+            if (discount > 0) {
+                // Apply discount to fee
+                feeOverride = uint24(key.fee * (100 - discount) / 100);
+            }
+        }
+
+        return (
+            BaseHook.beforeSwap.selector,
+            BeforeSwapDeltaLibrary.ZERO_DELTA,
+            feeOverride // Return discounted fee!
+        );
+    }
+}
+
+// How to use:
+// bytes memory promoCode = bytes("SUMMER2024");
+// router.swap(key, params, promoCode);
+```
+
+### 🔧 Example 3: Complex Data Structure
+
+**Use Case:** Pass multiple pieces of information.
+
+```solidity
+// Define a struct for your data
+struct TradeMetadata {
+    address referrer;
+    uint8 loyaltyTier;    // 0 = bronze, 1 = silver, 2 = gold
+    bool isFirstTrade;
+    uint32 campaignId;
+}
+
+function _afterSwap(
+    address sender,
+    PoolKey calldata key,
+    SwapParams calldata params,
+    BalanceDelta delta,
+    bytes calldata hookData
+) internal override returns (bytes4, int128) {
+    PoolId poolId = key.toId();
+
+    // Base points
+    uint256 points = POINTS_PER_SWAP;
+
+    // Decode complex data if provided
+    if (hookData.length > 0) {
+        TradeMetadata memory metadata = abi.decode(hookData, (TradeMetadata));
+
+        // Loyalty tier multiplier
+        if (metadata.loyaltyTier == 1) points = points * 15 / 10; // 1.5x silver
+        if (metadata.loyaltyTier == 2) points = points * 2;       // 2x gold
+
+        // First trade bonus
+        if (metadata.isFirstTrade) points += 100;
+
+        // Referrer bonus
+        if (metadata.referrer != address(0)) {
+            userPoints[metadata.referrer][poolId] += REFERRAL_BONUS;
+        }
+
+        // Campaign tracking
+        campaignVolume[metadata.campaignId] += uint256(abs(delta.amount0()));
+    }
+
+    userPoints[sender][poolId] += points;
+
+    return (BaseHook.afterSwap.selector, 0);
+}
+
+// How to use:
+TradeMetadata memory metadata = TradeMetadata({
+    referrer: 0xBob...,
+    loyaltyTier: 2,        // Gold tier
+    isFirstTrade: true,
+    campaignId: 12345
+});
+
+bytes memory hookData = abi.encode(metadata);
+router.swap(key, params, hookData);
+```
+
+### 🔧 Example 4: Conditional Execution
+
+**Use Case:** Hook behavior changes based on a flag.
+
+```solidity
+function _afterSwap(
+    address sender,
+    PoolKey calldata key,
