@@ -16,3 +16,12 @@ library HookMiner {
 
     // Maximum number of iterations to find a salt, avoid infinite loops
     uint256 constant MAX_LOOP = 100_000;
+
+    function find(
+        address deployer,
+        uint160 flags,
+        bytes memory creationCode,
+        bytes memory constructorArgs
+    ) external pure returns (address, bytes32) {
+        address hookAddress;
+        bytes memory creationCodeWithArgs = abi.encodePacked(creationCode, constructorArgs);
