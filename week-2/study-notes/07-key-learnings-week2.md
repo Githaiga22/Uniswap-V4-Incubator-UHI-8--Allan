@@ -146,3 +146,77 @@ function _afterSwap(...) returns (
 - Wrong delta → accounting breaks
 - Wrong fee → pool economics break
 
+**Safety pattern**: Start with zero/default returns. Only modify when you understand implications.
+
+---
+
+## Architectural Patterns Observed
+
+### Pattern 1: Simple Tracking (MyFirstHook)
+```solidity
+mapping(PoolId => uint256) public metric;
+
+function _hook(...) {
+    metric[key.toId()]++;
+}
+```
+**Use when**: Collecting pool-level statistics
+
+### Pattern 2: Per-User Tracking (PointsHook)
+```solidity
+mapping(address => mapping(PoolId => uint256)) public userMetric;
+
+function _hook(...) {
+    userMetric[extractUser(hookData)][key.toId()] += value;
+}
+```
+**Use when**: Building user-facing features (points, rewards, limits)
+
+### Pattern 3: Access Control
+```solidity
+mapping(address => bool) public whitelist;
+
+function _beforeSwap(...) {
+    address user = extractUser(hookData);
+    require(whitelist[user], "Not authorized");
+    // ...
+}
+```
+**Use when**: Permissioned pools (KYC, NFT-gating, etc.)
+
+### Pattern 4: Dynamic Fees
+```solidity
+function _beforeSwap(...) returns (bytes4, BeforeSwapDelta, uint24) {
+    uint24 newFee = calculateFee(currentVolatility);
+    return (selector, ZERO_DELTA, newFee);
+}
+```
+**Use when**: Volatility-adjusted fees, surge pricing, incentive mechanisms
+
+---
+
+## Development Workflow
+
+From idea to deployment:
+
+```
+1. Design Phase
+   ├─ Define hook lifecycle points needed
+   ├─ Design state structure
+   └─ Specify permissions
+
+2. Implementation Phase
+   ├─ Inherit from BaseHook
+   ├─ Implement getHookPermissions()
+   ├─ Write internal _hook() functions
+   └─ Add view functions for queries
+
+3. Testing Phase
+   ├─ Deploy test PoolManager
+   ├─ Mine hook address (HookMiner)
+   ├─ Initialize test pools
+   └─ Write test cases
+
+4. Deployment Phase
+   ├─ Mine production address
+   ├─ Deploy with create2
