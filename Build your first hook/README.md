@@ -193,3 +193,68 @@ All hooks inherit from `BaseHook` which provides:
 **BaseHook handles:**
 - Public `beforeSwap()` → calls my `_beforeSwap()`
 - Validates return selectors
+- Manages PoolManager communication
+
+This separation prevents me from accidentally breaking the protocol interface.
+
+### Balance Deltas
+
+Understanding `BalanceDelta` was initially confusing. It represents changes from the POOL's perspective:
+
+```
+Swap: ETH → USDC (zeroForOne = true)
+BalanceDelta:
+  amount0 = +1.0 ETH     (pool received)
+  amount1 = -2000 USDC   (pool sent out)
+```
+
+Positive = inflow to pool
+Negative = outflow from pool
+
+This matters when building hooks that modify swap amounts or collect fees.
+
+---
+
+## What I Learned
+
+### Architectural Insights
+
+1. **Hooks are plugins, not controllers**: I can observe and react to pool events, but I can't override core swap mechanics. This is by design - keeps the protocol safe.
+
+2. **Permission granularity**: Can enable as many hooks as needed. The address mining scales fine up to ~10 permissions.
+
+3. **State design matters**: For per-user tracking, nested mappings are essential. For global stats, flat mappings suffice.
+
+### Solidity Patterns
+
+1. **Library usage**: `using PoolIdLibrary for PoolKey` enables clean syntax:
+   ```solidity
+   PoolId id = key.toId();  // Clean
+   // vs
+   PoolId id = PoolIdLibrary.toId(key);  // Verbose
+   ```
+
+2. **Return value contracts**: Every hook must return specific types. Getting this wrong causes silent failures or reverts.
+
+3. **Constants vs configurability**: Used constants for learning, but production hooks need dynamic configuration.
+
+### Development Process
+
+1. **Start with permissions**: Design what lifecycle events you need FIRST, then implement.
+
+2. **Test early**: Hook address mining can fail if permissions are too restrictive. Test the mining process early.
+
+3. **Read the source**: When stuck, reading v4-core source code (especially `PoolManager.sol`) clarifies behavior instantly.
+
+---
+
+## Comparisons
+
+### MyFirstHook vs PointsHook
+
+| Aspect | MyFirstHook | PointsHook |
+|--------|-------------|------------|
+| Complexity | Beginner | Intermediate |
+| State | Single mapping | Nested mappings |
+| Hooks used | 2 (swap only) | 2 (swap + liquidity) |
+| Lines of code | ~60 | ~90 |
