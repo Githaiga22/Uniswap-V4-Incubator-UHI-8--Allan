@@ -192,3 +192,100 @@ Everything else builds on this foundation.
 
 ## Hook 2: PointsHook
 
+### Concept
+Loyalty rewards system. Award points for trading and providing liquidity.
+
+### Architecture
+
+```
+Points Economy:
+┌────────────────────────────────────┐
+│         User Actions               │
+├────────────────────────────────────┤
+│                                    │
+│ Swap           → 10 points         │
+│ Add Liquidity  → 50 points         │
+│ Remove Liquidity → 0 points        │
+│ Donate         → 0 points          │
+│                                    │
+└────────────────────────────────────┘
+
+State Structure:
+User → Pool → Points Balance
+ │      │
+ ▼      ▼
+0x123  poolA  →  100 pts
+0x123  poolB  →  250 pts
+0x456  poolA  →   50 pts
+```
+
+### Implementation
+
+```solidity
+contract PointsHook is BaseHook {
+    mapping(address => mapping(PoolId => uint256)) public userPoints;
+
+    uint256 public constant POINTS_PER_SWAP = 10;
+    uint256 public constant POINTS_PER_LIQUIDITY = 50;
+
+    function _afterSwap(address sender, ...) internal override {
+        userPoints[sender][key.toId()] += POINTS_PER_SWAP;
+        return (BaseHook.afterSwap.selector, 0);
+    }
+
+    function _afterAddLiquidity(address sender, ...) internal override {
+        userPoints[sender][key.toId()] += POINTS_PER_LIQUIDITY;
+        return (BaseHook.afterAddLiquidity.selector, BalanceDelta.wrap(0));
+    }
+}
+```
+
+**Design choices**:
+- Nested mappings - enables per-user per-pool tracking
+- Constants for point values - should be configurable in production
+- Multiple hooks (swap + liquidity) - shows how to combine events
+- View functions - makes data queryable by frontends
+
+### Challenges Faced
+
+**The sender context issue**:
+Initially confused about who `sender` represents in hook callbacks. Turns out it's the address that called the PoolManager, which IS the end user in this context. No additional extraction needed.
+
+**Total points calculation**:
+Can't efficiently calculate user's total points across ALL pools on-chain. Would require iterating through all pools or maintaining a separate aggregate. Solution: use events + off-chain indexing.
+
+---
+
+## Technical Deep Dives
+
+### Hook Deployment Process
+
+1. **Write hook code** with desired permissions
+2. **Run HookMiner** to find valid CREATE2 salt
+3. **Deploy with CREATE2** using that salt
+4. **Address automatically** has correct permission bits
+5. **Initialize pools** that use this hook
+
+```bash
+# Example mining command
+forge test --match-test testFindSalt -vv
+
+# Output: Found salt 0x1234 → Address 0x...00C0
+```
+
+### Type System Mastery
+
+**PoolKey vs PoolId**:
+```solidity
+struct PoolKey {
+    Currency currency0;
+    Currency currency1;
+    uint24 fee;
+    int24 tickSpacing;
+    IHooks hooks;
+}
+
+PoolId = keccak256(abi.encode(PoolKey))
+```
+
+PoolKey is full pool specification. PoolId is hash for storage keys. Always use `key.toId()` for mapping keys.
