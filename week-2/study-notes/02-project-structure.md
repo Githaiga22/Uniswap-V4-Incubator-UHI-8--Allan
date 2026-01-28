@@ -103,3 +103,108 @@ When your instructor shows files like:
 - etc.
 
 These are in **lib/v4-core/** - the Uniswap v4 core that we import!
+
+```
+┌────────────────────────────────────────────────────────┐
+│  Instructor's Screen                                   │
+│  └── uniswap-v4-core/          ← They're showing THIS  │
+│      └── src/                                          │
+│          ├── PoolManager.sol                           │
+│          ├── types/                                    │
+│          │   ├── BalanceDelta.sol                      │
+│          │   └── PoolKey.sol                           │
+│          └── ...                                       │
+│                                                        │
+│  Your Project                                          │
+│  ├── src/examples/             ← You write hooks HERE  │
+│  │   ├── MyFirstHook.sol                               │
+│  │   └── PointsHook.sol                                │
+│  └── lib/v4-core/              ← Same code as above!   │
+│      └── src/                    (installed dependency)│
+│          ├── PoolManager.sol                           │
+│          └── types/                                    │
+│              ├── BalanceDelta.sol                      │
+│              └── PoolKey.sol                           │
+└────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 📖 File-by-File Explanation
+
+### Documentation Files
+
+#### README.md
+- Project overview
+- What this project teaches
+- Quick links to other docs
+
+#### PROJECT_STRUCTURE.md (this file)
+- Complete directory structure
+- Explanation of organization
+- How it relates to Uniswap v4 core
+
+#### GETTING_STARTED.md
+- Step-by-step tutorial
+- Exercises to try
+- Common commands
+- Troubleshooting
+
+#### CODE_WALKTHROUGH.md
+- Line-by-line explanations
+- ASCII diagrams
+- Real-world analogies
+- Detailed learning material
+
+#### FAQ.md
+- Answers to common questions
+- Visual explanations
+- Advanced topics
+
+---
+
+### Source Code (src/)
+
+#### src/examples/
+Contains educational hook implementations:
+
+**MyFirstHook.sol**
+```
+Purpose: Beginner-friendly introduction
+Features:
+  • Simple swap counter
+  • Demonstrates basic hook structure
+  • Shows permission system
+  • Minimal complexity
+Hooks Used:
+  • beforeSwap
+  • afterSwap
+```
+
+**PointsHook.sol**
+```
+Purpose: Advanced, production-ready pattern
+Features:
+  • User-specific point tracking
+  • Multiple hook types
+  • View functions for queries
+  • Extensive documentation
+Hooks Used:
+  • afterSwap
+  • afterAddLiquidity
+```
+
+#### src/base/ (Empty - For Your Extensions)
+Purpose: Reusable base contracts you create
+```
+Example future files:
+  • BaseRewardHook.sol      - Common reward logic
+  • BaseAccessControl.sol   - Whitelist/blacklist pattern
+  • BaseOracle.sol          - Price oracle integration
+```
+
+#### src/interfaces/ (Empty - For Your Extensions)
+Purpose: Custom interfaces for your hooks
+```
+Example future files:
+  • IRewardCalculator.sol
