@@ -1378,3 +1378,463 @@ router.swap(key, params, hookData);
 function _afterSwap(
     address sender,
     PoolKey calldata key,
+    SwapParams calldata params,
+    BalanceDelta delta,
+    bytes calldata hookData
+) internal override returns (bytes4, int128) {
+    // Check first byte for mode
+    uint8 mode = 0;
+    if (hookData.length > 0) {
+        mode = uint8(hookData[0]);
+    }
+
+    if (mode == 0) {
+        // Mode 0: Regular points
+        userPoints[sender][key.toId()] += POINTS_PER_SWAP;
+    } else if (mode == 1) {
+        // Mode 1: Charity mode - donate points to charity pool
+        charityPoints[key.toId()] += POINTS_PER_SWAP;
+    } else if (mode == 2) {
+        // Mode 2: Fast mode - no points, just execute quickly
+        // Skip point tracking to save gas
+    }
+
+    return (BaseHook.afterSwap.selector, 0);
+}
+
+// Usage:
+// Normal swap: router.swap(key, params, abi.encodePacked(uint8(0)));
+// Charity:     router.swap(key, params, abi.encodePacked(uint8(1)));
+// Fast:        router.swap(key, params, abi.encodePacked(uint8(2)));
+```
+
+### 🔧 Example 5: Signature Verification
+
+**Use Case:** Verify off-chain authorization.
+
+```solidity
+function _beforeSwap(
+    address sender,
+    PoolKey calldata key,
+    SwapParams calldata params,
+    bytes calldata hookData
+) internal override returns (bytes4, BeforeSwapDelta, uint24) {
+    // Require signature from authorized oracle
+    if (hookData.length == 65) { // Standard signature length
+        bytes32 messageHash = keccak256(abi.encodePacked(
+            sender,
+            key.toId(),
+            params.amountSpecified,
+            block.timestamp / 1 hours // Valid for 1 hour
+        ));
+
+        bytes32 ethSignedHash = keccak256(abi.encodePacked(
+            "\x19Ethereum Signed Message:\n32",
+            messageHash
+        ));
+
+        address signer = recoverSigner(ethSignedHash, hookData);
+
+        require(signer == authorizedOracle, "Invalid signature");
+    }
+
+    return (
+        BaseHook.beforeSwap.selector,
+        BeforeSwapDeltaLibrary.ZERO_DELTA,
+        0
+    );
+}
+```
+
+### 📋 Summary: When to Use hookData
+
+```
+USE HOOKDATA FOR:
+┌──────────────────────────────────────────────────────────┐
+│ ✓ Referral tracking                                      │
+│ ✓ Promo codes / discounts                                │
+│ ✓ User preferences                                       │
+│ ✓ Additional context about the transaction              │
+│ ✓ Authorization signatures                               │
+│ ✓ Campaign tracking                                      │
+│ ✓ Conditional logic (modes/flags)                        │
+│ ✓ Off-chain computed data                                │
+│ ✓ Integration with external systems                      │
+└──────────────────────────────────────────────────────────┘
+
+DON'T USE HOOKDATA FOR:
+┌──────────────────────────────────────────────────────────┐
+│ ✗ Data already in PoolKey or SwapParams                  │
+│ ✗ Data that should be stored on-chain (use state vars)  │
+│ ✗ Secret information (it's public on chain!)            │
+│ ✗ Critical security checks (validate, don't just trust) │
+└──────────────────────────────────────────────────────────┘
+```
+
+### 🎯 Best Practices
+
+```solidity
+// 1. Always check length before decoding
+if (hookData.length > 0) {
+    // Safe to decode
+}
+
+// 2. Use try-catch for complex decoding
+try this.decodeHookData(hookData) returns (CustomData memory data) {
+    // Use data
+} catch {
+    // Handle invalid data gracefully
+}
+
+// 3. Document expected format
+/**
+ * @notice Expected hookData format:
+ * - Bytes 0-19: Referrer address (address, 20 bytes)
+ * - Byte 20: Loyalty tier (uint8, 1 byte)
+ * - Bytes 21-52: Signature (bytes32, 32 bytes)
+ */
+
+// 4. Provide default behavior for empty hookData
+if (hookData.length == 0) {
+    // Default: no referrer, no bonus
+    userPoints[sender][poolId] += POINTS_PER_SWAP;
+    return (...);
+}
+```
+
+### Real-World Integration
+
+```solidity
+// Frontend code (JavaScript/TypeScript)
+import { ethers } from 'ethers';
+
+// Encode referrer address
+const referrerAddress = "0x1234...";
+const hookData = ethers.solidityPacked(['address'], [referrerAddress]);
+
+// Or encode complex struct
+const hookData = ethers.AbiCoder.defaultAbiCoder().encode(
+    ['tuple(address,uint8,bool,uint32)'],
+    [[referrerAddress, 2, true, 12345]]
+);
+
+// Use in swap
+await router.swap(poolKey, swapParams, hookData);
+```
+
+**Key Takeaway:** `hookData` is an open-ended communication channel between transaction initiators and your hook. Use it creatively!
+
+---
+
+## Question 8: Zero Amount Swaps
+### "What if amountSpecified is 0? Would the swap go through?"
+
+**Short Answer:** No! A swap with amountSpecified = 0 will fail. You're absolutely correct in your thinking - it's like asking for 1000 USDC in exchange for 0 ETH, which makes no sense economically.
+
+### 🎯 Why Zero Swaps Don't Work
+
+```
+┌────────────────────────────────────────────────────────┐
+│  The Zero Swap Problem                                 │
+│                                                        │
+│  User says: "I want to swap 0 tokens"                  │
+│                                                        │
+│  Questions that arise:                                 │
+│  • How much do you get back? (Can't calculate!)        │
+│  • What's the price impact? (Division by zero!)        │
+│  • Should fees be charged? (0% of 0 = meaningless)     │
+│  • Did anything actually happen? (No!)                 │
+│                                                        │
+│  It's economically undefined!                          │
+└────────────────────────────────────────────────────────┘
+```
+
+### 💰 The Trading Analogy
+
+```
+AT A CURRENCY EXCHANGE:
+
+You: "I want to exchange money"
+Clerk: "How much?"
+You: "Zero dollars"
+Clerk: "... then why are you here?"
+
+┌────────────────────────────────────────────────┐
+│  Exchange Booth                                │
+│                                                │
+│  You have:    $0                               │
+│  You want:    ¥??? (Can't determine!)          │
+│  Exchange rate: $1 = ¥100                      │
+│  Result:      $0 × 100 = ¥0                    │
+│                                                │
+│  You walk away with nothing.                   │
+│  The clerk is confused.                        │
+│  No transaction occurred.                      │
+└────────────────────────────────────────────────┘
+```
+
+### 🔢 Technical Explanation
+
+```solidity
+struct SwapParams {
+    bool zeroForOne;
+    int256 amountSpecified;  // ← This is the amount
+    uint160 sqrtPriceLimitX96;
+}
+
+// When amountSpecified = 0:
+SwapParams memory params = SwapParams({
+    zeroForOne: true,
+    amountSpecified: 0,  // ❌ Problem!
+    sqrtPriceLimitX96: PRICE_LIMIT
+});
+```
+
+**What happens internally:**
+
+```
+┌──────────────────────────────────────────────────────┐
+│  PoolManager.swap() validation                       │
+│                                                      │
+│  Step 1: Check amountSpecified                       │
+│  if (amountSpecified == 0) {                         │
+│      revert SwapAmountCannotBeZero();                │
+│  }                                                   │
+│                                                      │
+│  Step 2: Calculate swap...                           │
+│  // Never reached if amount is 0                     │
+└──────────────────────────────────────────────────────┘
+```
+
+### 📊 Visual: Valid vs Invalid Swaps
+
+```
+VALID SWAP (Positive Amount):
+┌─────────────────────────────────────────┐
+│  User: "I want to swap 1 ETH"           │
+│  Pool: "You'll receive 1800 USDC"       │
+│  ✓ Clear input                          │
+│  ✓ Calculable output                    │
+│  ✓ Transaction executes                 │
+└─────────────────────────────────────────┘
+
+Pool Before:  [1000 ETH] ←→ [1,800,000 USDC]
+              ↓ User swaps 1 ETH
+Pool After:   [1001 ETH] ←→ [1,798,200 USDC]
+              User receives 1800 USDC
+
+INVALID SWAP (Zero Amount):
+┌─────────────────────────────────────────┐
+│  User: "I want to swap 0 ETH"           │
+│  Pool: "Error! Cannot be zero!"         │
+│  ✗ Meaningless input                    │
+│  ✗ Cannot calculate output              │
+│  ✗ Transaction reverts                  │
+└─────────────────────────────────────────┘
+
+Pool Before:  [1000 ETH] ←→ [1,800,000 USDC]
+              ↓ User tries to swap 0 ETH
+              ❌ REVERTED
+Pool After:   [1000 ETH] ←→ [1,800,000 USDC]
+              (No change - transaction failed)
+```
+
+### 🧮 The Math Problem
+
+```
+AMM Pricing Formula (simplified):
+output = (input × reserveOut) / (reserveIn + input)
+
+With zero input:
+output = (0 × reserveOut) / (reserveIn + 0)
+output = 0 / reserveIn
+output = 0
+
+Problems:
+1. Output is always 0 (not useful!)
+2. Price impact = 0 (but nothing happened!)
+3. Fees = 0 × fee_rate = 0 (no revenue for LPs)
+4. Pool state unchanged (wasted gas)
+
+It's technically computable but economically meaningless!
+```
+
+### 🎮 Real-World Code Example
+
+```solidity
+// This will REVERT:
+function attemptZeroSwap() external {
+    IPoolManager.SwapParams memory params = IPoolManager.SwapParams({
+        zeroForOne: true,
+        amountSpecified: 0,  // ❌ Will fail!
+        sqrtPriceLimitX96: MIN_PRICE_LIMIT
+    });
+
+    // This line will revert with SwapAmountCannotBeZero()
+    poolManager.swap(poolKey, params, hookData);
+}
+
+// This will SUCCEED:
+function attemptValidSwap() external {
+    IPoolManager.SwapParams memory params = IPoolManager.SwapParams({
+        zeroForOne: true,
+        amountSpecified: -1e18,  // ✓ Swapping 1 token (exact input)
+        sqrtPriceLimitX96: MIN_PRICE_LIMIT
+    });
+
+    // This works!
+    poolManager.swap(poolKey, params, hookData);
+}
+```
+
+### ⚠️ Common Misconceptions
+
+```
+❌ WRONG: "Zero swap is a way to check the pool state"
+✅ RIGHT: Use view functions instead:
+          - pool.getSlot0() to get current price
+          - pool.getLiquidity() to get liquidity
+
+❌ WRONG: "Zero swap can be used to test if pool exists"
+✅ RIGHT: Check if pool is initialized:
+          - poolManager.isPoolInitialized(poolKey)
+
+❌ WRONG: "Zero swap is gas-efficient for testing hooks"
+✅ RIGHT: If you want to test hooks without actual swap:
+          - Use a tiny amount (1 wei)
+          - Or mock the PoolManager in tests
+```
+
+### 🔍 Edge Cases
+
+**Minimum Swap Amounts:**
+
+```
+VERY SMALL SWAP (Still valid):
+┌────────────────────────────────────────┐
+│  amountSpecified = 1 wei               │
+│  • Technically valid ✓                 │
+│  • Might receive 0 tokens (rounding)   │
+│  • Still pays gas                      │
+│  • May fail due to slippage limits     │
+└────────────────────────────────────────┘
+
+Example:
+Swap 1 wei of ETH
+→ Receive 0.0000018 USDC
+→ Rounds to 0 USDC
+→ Swap succeeds but you get nothing!
+
+This is why frontends usually enforce minimum swap amounts:
+if (userInput < 0.001) {
+    alert("Minimum swap: 0.001 ETH");
+}
+```
+
+### Summary Diagram
+
+```
+┌─────────────────────────────────────────────────────┐
+│  Swap Amount Decision Tree                          │
+│                                                     │
+│  amountSpecified = ???                              │
+│         │                                           │
+│         ├─ = 0 ────────────→ ❌ REVERT             │
+│         │                     "SwapAmountCannotBeZero"│
+│         │                                           │
+│         ├─ > 0 (small) ────→ ⚠️  CAUTION           │
+│         │                     Might receive 0       │
+│         │                     due to rounding       │
+│         │                                           │
+│         └─ > 0 (reasonable)→ ✅ SUCCESS             │
+│                              Normal swap            │
+└─────────────────────────────────────────────────────┘
+```
+
+**Key Takeaways:**
+- ❌ Zero swaps are rejected by the protocol
+- 💭 It's like exchanging nothing for nothing
+- ⚡ Use view functions to query pool state instead
+- 🔬 For testing, use tiny but non-zero amounts
+
+---
+
+## Question 9: Token Direction
+### "Currencies for amount0 and amount1 will swap if zeroForOne is set to false, right?"
+
+**Excellent question!** You're absolutely right. The `zeroForOne` flag determines which direction the swap goes. Let's break this down visually.
+
+### 🔄 Understanding zeroForOne
+
+```
+┌──────────────────────────────────────────────────────────┐
+│  Pool Structure (Always Ordered)                         │
+│                                                          │
+│  ┌──────────────┐          ┌──────────────┐             │
+│  │  Currency 0  │ ←──────→ │  Currency 1  │             │
+│  │   (Token0)   │          │   (Token1)   │             │
+│  └──────────────┘          └──────────────┘             │
+│                                                          │
+│  Note: Token0 address < Token1 address (sorted!)         │
+│  Example: 0x0000...AAA < 0x0000...FFF                    │
+└──────────────────────────────────────────────────────────┘
+```
+
+### 📊 The Two Swap Directions
+
+```
+DIRECTION 1: zeroForOne = true
+┌──────────────────────────────────────────────────────────┐
+│                                                          │
+│  ┌──────────────┐          ┌──────────────┐             │
+│  │   Token 0    │  ──────→ │   Token 1    │             │
+│  │   (Input)    │          │   (Output)   │             │
+│  └──────────────┘          └──────────────┘             │
+│                                                          │
+│  User gives: Token0                                      │
+│  User gets:  Token1                                      │
+│                                                          │
+│  Example: Swap ETH → USDC                                │
+│  (if ETH is Token0, USDC is Token1)                      │
+└──────────────────────────────────────────────────────────┘
+
+DIRECTION 2: zeroForOne = false
+┌──────────────────────────────────────────────────────────┐
+│                                                          │
+│  ┌──────────────┐          ┌──────────────┐             │
+│  │   Token 0    │  ←────── │   Token 1    │             │
+│  │   (Output)   │          │   (Input)    │             │
+│  └──────────────┘          └──────────────┘             │
+│                                                          │
+│  User gives: Token1                                      │
+│  User gets:  Token0                                      │
+│                                                          │
+│  Example: Swap USDC → ETH                                │
+│  (if ETH is Token0, USDC is Token1)                      │
+└──────────────────────────────────────────────────────────┘
+```
+
+### 🎯 Concrete Example: ETH/USDC Pool
+
+```
+Pool Setup:
+┌─────────────────────────────────────┐
+│  Token0: ETH  (0x00...ABC)          │
+│  Token1: USDC (0x00...XYZ)          │
+│  (ABC < XYZ in address order)       │
+└─────────────────────────────────────┘
+
+Scenario A: Alice wants to buy USDC with ETH
+┌──────────────────────────────────────────────────────────┐
+│  Alice's Trade:                                          │
+│  • Give: 1 ETH                                           │
+│  • Get: ~1800 USDC                                       │
+│                                                          │
+│  Code:                                                   │
+│  SwapParams({                                            │
+│      zeroForOne: true,      ← ETH (0) → USDC (1)         │
+│      amountSpecified: -1e18, ← Exact input: 1 ETH        │
+│      ...                                                 │
+│  })                                                      │
+│                                                          │
+│  Flow:                                                   │
