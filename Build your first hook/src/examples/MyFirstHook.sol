@@ -37,3 +37,16 @@ contract MyFirstHook is BaseHook {
             beforeDonate: false,
             afterDonate: false,
             beforeSwapReturnDelta: false,
+            afterSwapReturnDelta: false,
+            afterAddLiquidityReturnDelta: false,
+            afterRemoveLiquidityReturnDelta: false
+        });
+    }
+
+    function _beforeSwap(
+        address,
+        PoolKey calldata,
+        SwapParams calldata,
+        bytes calldata
+    ) internal override returns (bytes4, BeforeSwapDelta, uint24) {
+        return (BaseHook.beforeSwap.selector, BeforeSwapDeltaLibrary.ZERO_DELTA, 0);
