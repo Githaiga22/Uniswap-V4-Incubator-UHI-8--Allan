@@ -234,3 +234,66 @@ contract PointsHookTest is Test, Deployers {
         PoolId poolId = key.toId();
 
         vm.startPrank(alice);
+
+        // Alice swaps
+        swap(key, true, -1e18, ZERO_BYTES);
+
+        // Alice adds liquidity
+        modifyLiquidityRouter.modifyLiquidity(
+            key,
+            ModifyLiquidityParams({
+                tickLower: -60,
+                tickUpper: 60,
+                liquidityDelta: 2 ether,
+                salt: bytes32(uint256(1)) // Different salt from setUp
+            }),
+            ZERO_BYTES
+        );
+
+        vm.stopPrank();
+
+        // Calculate expected points: swap + liquidity
+        uint256 expectedPoints = hook.POINTS_PER_SWAP() + hook.POINTS_PER_LIQUIDITY();
+        uint256 actualPoints = hook.getPoints(alice, poolId);
+
+        assertEq(actualPoints, expectedPoints, "Should have points from both actions");
+
+        console.log("Points from swap:", hook.POINTS_PER_SWAP());
+        console.log("Points from liquidity:", hook.POINTS_PER_LIQUIDITY());
+        console.log("Total points:", actualPoints);
+    }
+}
+
+/**
+ * ============================================
+ * TESTING CONCEPTS EXPLAINED
+ * ============================================
+ *
+ * 1. FOUNDRY TEST STRUCTURE
+ *    - setUp() runs before each test
+ *    - Functions starting with "test" are test cases
+ *    - vm.prank(address) makes the next call from that address
+ *    - vm.startPrank/stopPrank makes multiple calls from an address
+ *
+ * 2. ASSERTIONS
+ *    - assertEq(a, b, "message") - checks equality
+ *    - assertGt(a, b, "message") - checks greater than
+ *    - Tests fail if any assertion fails
+ *
+ * 3. RUNNING TESTS
+ *    forge test                    // Run all tests
+ *    forge test -vv                // Verbose output
+ *    forge test --match-test testSwap  // Run specific test
+ *    forge test --gas-report       // Show gas usage
+ *
+ * 4. DEBUGGING
+ *    - Use console.log() to print values
+ *    - Use forge test -vvvv for detailed traces
+ *    - Check "forge test --help" for more options
+ *
+ * 5. BEST PRACTICES
+ *    - Test one thing per test function
+ *    - Use descriptive test names (testWhatShouldHappen)
+ *    - Add comments explaining what you're testing
+ *    - Test edge cases and failure scenarios
+ */
