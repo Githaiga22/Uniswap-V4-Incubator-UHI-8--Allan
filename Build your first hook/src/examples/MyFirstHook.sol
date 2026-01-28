@@ -50,3 +50,16 @@ contract MyFirstHook is BaseHook {
         bytes calldata
     ) internal override returns (bytes4, BeforeSwapDelta, uint24) {
         return (BaseHook.beforeSwap.selector, BeforeSwapDeltaLibrary.ZERO_DELTA, 0);
+    }
+
+    function _afterSwap(
+        address,
+        PoolKey calldata key,
+        SwapParams calldata,
+        BalanceDelta,
+        bytes calldata
+    ) internal override returns (bytes4, int128) {
+        swapCount[key.toId()]++;
+        return (BaseHook.afterSwap.selector, 0);
+    }
+}
