@@ -128,3 +128,68 @@ To make this production-ready:
 # Install Foundry
 curl -L https://foundry.paradigm.xyz | bash
 foundryup
+```
+
+### Build
+```bash
+forge build
+```
+
+### Test
+```bash
+forge test -vv
+```
+
+**Note**: Tests currently need currency initialization fixes. The hook code itself compiles and is logically sound.
+
+### Deploy
+```bash
+# Set environment variables
+export POOL_MANAGER_ADDRESS=<address>
+export PRIVATE_KEY=<your_key>
+
+# Run deployment
+forge script script/DeployHook.s.sol --rpc-url <network> --broadcast
+```
+
+---
+
+## Technical Implementation Details
+
+### Hook Address Mining
+
+Uniswap V4 enforces that hook addresses encode their permissions in the last 2 bytes.
+
+Example:
+```
+Address: 0x1234...00C0
+Binary flags in 0xC0:
+├─ Bit 6: beforeSwap = 1
+├─ Bit 7: afterSwap = 1
+└─ All others: 0
+```
+
+**HookMiner.sol** brute-forces CREATE2 salts until finding a valid address:
+```solidity
+for (uint256 i = 0; i < MAX_LOOP; i++) {
+    address computed = computeCreate2Address(salt);
+    if (hasCorrectBits(computed)) return salt;
+}
+```
+
+I set `MAX_LOOP = 100,000` which is sufficient for most permission combinations.
+
+### BaseHook Pattern
+
+All hooks inherit from `BaseHook` which provides:
+- Constructor that stores PoolManager reference
+- Public interface functions that call internal `_hookName()` functions
+- Selector validation logic
+
+**My responsibility:**
+1. Implement `getHookPermissions()` - Declare which hooks I use
+2. Implement `_beforeSwap()`, `_afterSwap()`, etc. - My custom logic
+
+**BaseHook handles:**
+- Public `beforeSwap()` → calls my `_beforeSwap()`
+- Validates return selectors
