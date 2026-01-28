@@ -142,3 +142,51 @@ function _afterSwap(...) internal override returns (bytes4, int128) {
 
 **The msg.sender Problem**: Biggest gotcha. Hooks don't directly see end users. Need explicit user identification strategy.
 
+**Permission Granularity**: Can enable many hooks without issues. The address mining scales fine up to ~10 permissions.
+
+---
+
+## Testing Approach
+
+Same setup as MyFirstHook but with additional test cases:
+
+```solidity
+// Test cases needed:
+1. testSwapAwardsPoints
+2. testAddLiquidityAwardsPoints
+3. testRemoveLiquidityAwardsPoints
+4. testDonateAwardsPoints
+5. testMultipleUsersIndependentPoints
+6. testSameUserMultiplePools
+7. testQueryFunctions
+```
+
+**Current blocker**: Need to implement user address passing via hookData before tests can work.
+
+---
+
+## Production Roadmap
+
+To make this production-ready:
+
+### Phase 1: Core Functionality
+- [ ] Implement user address extraction via hookData
+- [ ] Add events for all point awards
+- [ ] Write comprehensive tests
+- [ ] Deploy to testnet
+
+### Phase 2: Configurability
+- [ ] Make point values configurable per pool
+- [ ] Add admin functions (pause, adjust rates)
+- [ ] Implement point expiry mechanism
+- [ ] Add referral bonus system
+
+### Phase 3: Integration
+- [ ] Build frontend dashboard for points
+- [ ] Create subgraph for point aggregation
+- [ ] Design redemption mechanism (points → rewards)
+- [ ] Integrate with existing DEX UIs
+
+### Phase 4: Advanced Features
+- [ ] Tiered rewards (more points for large trades)
+- [ ] Streak bonuses (daily active users)
