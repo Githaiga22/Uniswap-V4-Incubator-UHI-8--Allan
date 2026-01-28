@@ -94,3 +94,51 @@ uint256 public constant POINTS_PER_DONATION = 300;
 ### 4. Query Interface
 
 ```solidity
+function getUserPoints(address user, PoolId poolId) external view returns (uint256) {
+    return userPoints[user][poolId];
+}
+
+function getTotalPoints(address user) external view returns (uint256) {
+    // Note: Can't implement efficiently on-chain
+    // Requires off-chain indexing or enumeration
+    revert("Use indexer");
+}
+```
+
+**Design tradeoff**: I made `getUserPoints` view-only for specific pools. Getting total points across ALL pools can't be done efficiently on-chain without tracking a user's pool list (expensive).
+
+**Solution**: Frontend should use event indexing (The Graph, etc.) to aggregate total points.
+
+### 5. Missing: msg.sender Extraction
+
+```solidity
+function _afterSwap(...) internal override returns (bytes4, int128) {
+    // TODO: Need to extract user address
+    // msg.sender in this context is PoolManager, not user
+
+    PoolId poolId = key.toId();
+    // userPoints[???][poolId] += POINTS_PER_SWAP;
+
+    return (BaseHook.afterSwap.selector, 0);
+}
+```
+
+**Critical learning**: Inside hook callbacks, `msg.sender` is always the PoolManager. The actual user address must be:
+1. Passed via `hookData` parameter, OR
+2. Extracted from swap router context, OR
+3. Tracked via custom router wrapper
+
+**Tom's recommendation**: Use `hookData` to pass user address from router.
+
+---
+
+## What I Learned
+
+**Nested Mappings**: Essential pattern for per-user tracking. First time I've designed storage for multi-dimensional lookups at scale.
+
+**View Functions**: Providing query functions makes hooks frontend-friendly. Without them, dApps can only listen to events.
+
+**Constants vs Config**: Using constants is educational but limiting. Real hooks need governance or admin control to adjust incentives.
+
+**The msg.sender Problem**: Biggest gotcha. Hooks don't directly see end users. Need explicit user identification strategy.
+
