@@ -175,3 +175,62 @@ contract PointsHookTest is Test, Deployers {
      */
     function testMultipleSwapsAccumulatePoints() public {
         PoolId poolId = key.toId();
+        uint256 numSwaps = 5;
+
+        vm.startPrank(alice);
+
+        // Perform multiple swaps
+        for (uint256 i = 0; i < numSwaps; i++) {
+            // Alternate swap direction to avoid running out of liquidity
+            bool zeroForOne = i % 2 == 0;
+            int256 amountSpecified = zeroForOne ? int256(-1e17) : int256(1e17);
+            swap(key, zeroForOne, amountSpecified, ZERO_BYTES);
+        }
+
+        vm.stopPrank();
+
+        // Check accumulated points
+        uint256 totalPoints = hook.getPoints(alice, poolId);
+        uint256 expectedPoints = hook.POINTS_PER_SWAP() * numSwaps;
+        assertEq(totalPoints, expectedPoints, "Points should accumulate correctly");
+
+        // Check swap counter
+        assertEq(hook.getSwapCount(poolId), numSwaps, "Should count all swaps");
+
+        console.log("Alice's total points after", numSwaps, "swaps:", totalPoints);
+    }
+
+    /**
+     * @notice Test that different users have separate point balances
+     * @dev Points should be tracked per-user
+     */
+    function testPointsArePerUser() public {
+        PoolId poolId = key.toId();
+
+        // Alice swaps
+        vm.prank(alice);
+        swap(key, true, -1e18, ZERO_BYTES);
+
+        // Bob swaps
+        vm.prank(bob);
+        swap(key, false, 1e18, ZERO_BYTES);
+
+        // Check each user's points independently
+        uint256 alicePoints = hook.getPoints(alice, poolId);
+        uint256 bobPoints = hook.getPoints(bob, poolId);
+
+        assertEq(alicePoints, hook.POINTS_PER_SWAP(), "Alice should have her points");
+        assertEq(bobPoints, hook.POINTS_PER_SWAP(), "Bob should have his points");
+
+        console.log("Alice's points:", alicePoints);
+        console.log("Bob's points:", bobPoints);
+    }
+
+    /**
+     * @notice Test combined actions (swap + add liquidity)
+     * @dev Shows how points accumulate from different actions
+     */
+    function testCombinedActions() public {
+        PoolId poolId = key.toId();
+
+        vm.startPrank(alice);
