@@ -313,3 +313,108 @@ Your Hook (MyFirstHook.sol)
               ▼
 ┌──────────────────────────────────────────────────────┐
 │  BaseHook.beforeSwap() (public)                      │
+│  (lib/v4-periphery/src/utils/BaseHook.sol)           │
+└─────────────┬────────────────────────────────────────┘
+              │
+              ▼
+┌──────────────────────────────────────────────────────┐
+│  MyFirstHook._beforeSwap() (internal override)       │
+│  **YOUR CODE RUNS HERE** ← ← ←                       │
+│  (src/examples/MyFirstHook.sol)                      │
+└─────────────┬────────────────────────────────────────┘
+              │
+              ▼
+┌──────────────────────────────────────────────────────┐
+│  Return to PoolManager                               │
+│  Execute the swap                                    │
+│  Call hook.afterSwap() ...                           │
+└──────────────────────────────────────────────────────┘
+```
+
+---
+
+## 🎓 Learning Path Through The Structure
+
+### Week 1: Understanding Dependencies
+```
+1. Read: lib/v4-core/src/interfaces/IHooks.sol
+   • See all possible hook functions
+
+2. Read: lib/v4-core/src/libraries/Hooks.sol
+   • Understand permission flags
+   • See validation logic
+
+3. Read: lib/v4-periphery/src/utils/BaseHook.sol
+   • See how callbacks are routed
+   • Understand the pattern
+```
+
+### Week 2: Your First Hook
+```
+1. Study: src/examples/MyFirstHook.sol
+   • Follow CODE_WALKTHROUGH.md
+   • Run tests
+
+2. Modify: src/examples/MyFirstHook.sol
+   • Change what it tracks
+   • Add new state variables
+   • Run tests to verify
+```
+
+### Week 3: Advanced Patterns
+```
+1. Study: src/examples/PointsHook.sol
+   • See user tracking
+   • Understand view functions
+   • Multiple hook types
+
+2. Create: src/examples/YourCustomHook.sol
+   • Apply what you learned
+   • Implement your own logic
+   • Write tests
+```
+
+### Week 4: Production Ready
+```
+1. Refactor: Move reusable code to src/base/
+2. Define: Create interfaces in src/interfaces/
+3. Deploy: Use script/DeployHook.s.sol
+4. Test: On Sepolia testnet
+```
+
+---
+
+## 🛠️ Common Operations
+
+### Building
+```bash
+# Compile all contracts
+forge build
+
+# Just our hooks
+forge build --contracts src/examples
+```
+
+### Testing
+```bash
+# All tests
+forge test
+
+# Specific test file
+forge test --match-path test/MyFirstHook.t.sol
+
+# Very verbose (see everything)
+forge test -vvvv
+```
+
+### Adding New Hooks
+
+```bash
+# 1. Create in examples
+touch src/examples/MyNewHook.sol
+
+# 2. Create test
+touch test/MyNewHook.t.sol
+
+# 3. Update imports to use:
+import {MyNewHook} from "../src/examples/MyNewHook.sol";
