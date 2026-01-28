@@ -34,3 +34,21 @@ contract MyFirstHookTest is Test, Deployers {
         // Mine a salt that will produce a hook address with the correct flags
         uint160 flags = uint160(
             Hooks.BEFORE_SWAP_FLAG | Hooks.AFTER_SWAP_FLAG
+        );
+
+        (address hookAddress, bytes32 salt) =
+            HookMiner.find(address(this), flags, type(MyFirstHook).creationCode, abi.encode(address(manager)));
+
+        // Deploy hook contract
+        hook = new MyFirstHook{salt: salt}(IPoolManager(address(manager)));
+        require(address(hook) == hookAddress, "Hook address mismatch");
+
+        // Initialize a pool
+        (key,) = initPool(
+            currency0,
+            currency1,
+            hook,
+            3000, // 0.3% fee
+            SQRT_PRICE_1_1 // initial price 1:1
+        );
+
