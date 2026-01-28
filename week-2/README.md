@@ -95,3 +95,100 @@ Available Permissions:
 **3. Address Mining**
 
 The most unexpected concept. Your hook can't just deploy anywhere - it needs a specific address.
+
+```
+Example Hook Address: 0x1234...00C0
+
+Last 2 bytes (0x00C0) in binary:
+0000 0000 1100 0000
+         ││
+         └┴─ Bits 6 & 7 set
+
+Meaning:
+Bit 6 = beforeSwap enabled
+Bit 7 = afterSwap enabled
+```
+
+**Solution**: Use CREATE2 with salt mining. Tom provided `HookMiner.sol` that brute-forces salts until finding a valid address. This can take seconds to minutes depending on permission combination.
+
+**4. Return Values Contract**
+
+Every hook function must return specific values:
+
+```solidity
+// afterSwap must return:
+return (
+    BaseHook.afterSwap.selector,  // Confirms execution
+    0                              // Hook delta (usually 0)
+);
+```
+
+Wrong selector = transaction reverts. This validates the hook ran correctly without extra state checks.
+
+---
+
+## Hook 1: MyFirstHook
+
+### Concept
+Simple swap counter. Tracks how many swaps occur in each pool.
+
+### Architecture
+
+```
+Swap Flow with MyFirstHook:
+┌─────────────────────────────────┐
+│ User initiates swap             │
+└────────────┬────────────────────┘
+             ▼
+┌─────────────────────────────────┐
+│ PoolManager calls hook          │
+│  → _beforeSwap()                │
+│     (no-op, return selector)    │
+└────────────┬────────────────────┘
+             ▼
+┌─────────────────────────────────┐
+│ Pool executes swap logic        │
+└────────────┬────────────────────┘
+             ▼
+┌─────────────────────────────────┐
+│ PoolManager calls hook          │
+│  → _afterSwap()                 │
+│     swapCount[poolId]++         │
+│     return selector             │
+└─────────────────────────────────┘
+```
+
+### Implementation
+
+```solidity
+contract MyFirstHook is BaseHook {
+    mapping(PoolId => uint256) public swapCount;
+
+    function _afterSwap(...) internal override
+        returns (bytes4, int128)
+    {
+        swapCount[key.toId()]++;
+        return (BaseHook.afterSwap.selector, 0);
+    }
+}
+```
+
+**Design choices**:
+- Used `afterSwap` not `beforeSwap` - count only successful swaps
+- Single flat mapping - sufficient for pool-level counters
+- No events (yet) - could add for off-chain tracking
+
+### Key Learning
+
+The simplicity is the point. This hook demonstrates the core pattern without distractions:
+1. Inherit BaseHook
+2. Declare permissions
+3. Implement internal functions
+4. Return correct selectors
+
+Everything else builds on this foundation.
+
+---
+
+## Hook 2: PointsHook
+
