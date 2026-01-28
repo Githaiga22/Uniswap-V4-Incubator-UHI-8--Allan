@@ -57,3 +57,62 @@ contract PointsHookTest is Test, Deployers {
             Hooks.AFTER_SWAP_FLAG | Hooks.AFTER_ADD_LIQUIDITY_FLAG
         );
 
+        // HookMiner.find searches for a salt that creates the right address
+        // It uses CREATE2 address calculation: keccak256(0xff ++ deployer ++ salt ++ keccak256(bytecode))
+        (address hookAddress, bytes32 salt) =
+            HookMiner.find(address(this), flags, type(PointsHook).creationCode, abi.encode(address(manager)));
+
+        // STEP 3: Deploy the hook with the mined salt
+        // This ensures the deployed address matches our calculated address
+        hook = new PointsHook{salt: salt}(IPoolManager(address(manager)));
+        require(address(hook) == hookAddress, "Hook address mismatch");
+
+        // Log the hook address for debugging
+        console.log("PointsHook deployed at:", address(hook));
+
+        // STEP 4: Initialize a test pool
+        // A pool is defined by: currency0, currency1, fee, tickSpacing, and hook
+        (key,) = initPool(
+            currency0,           // Token A
+            currency1,           // Token B
+            hook,                // Our points hook
+            3000,                // 0.3% fee (3000 basis points)
+            SQRT_PRICE_1_1       // Initial price of 1:1
+        );
+
+        // STEP 5: Add initial liquidity to the pool
+        // Without liquidity, swaps cannot happen!
+        modifyLiquidityRouter.modifyLiquidity(
+            key,
+            ModifyLiquidityParams({
+                tickLower: -60,          // Lower tick of our position
+                tickUpper: 60,           // Upper tick of our position
+                liquidityDelta: 10 ether, // Amount of liquidity to add
+                salt: bytes32(0)         // Salt for position ID
+            }),
+            ZERO_BYTES // No hook data needed
+        );
+    }
+
+    /**
+     * @notice Test that swapping awards points correctly
+     * @dev This test verifies:
+     *      1. Points are awarded to the swapper
+     *      2. The correct number of points is awarded
+     *      3. The swap counter is incremented
+     */
+    function testSwapAwardsPoints() public {
+        // Get the pool ID
+        PoolId poolId = key.toId();
+
+        // Check initial state - alice should have 0 points
+        uint256 initialPoints = hook.getPoints(alice, poolId);
+        assertEq(initialPoints, 0, "Alice should start with 0 points");
+
+        // Perform a swap as Alice
+        vm.startPrank(alice); // All subsequent calls will be from alice's address
+
+        bool zeroForOne = true;      // Swapping token0 for token1
+        int256 amountSpecified = -1e18; // Exact input of 1 token
+        swap(key, zeroForOne, amountSpecified, ZERO_BYTES);
+
