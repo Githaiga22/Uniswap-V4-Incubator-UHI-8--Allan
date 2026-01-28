@@ -118,3 +118,34 @@ Could add event emissions, reward distribution, or state updates here.
 
 The test setup requires:
 - PoolManager deployment
+- Currency initialization
+- Hook address mining (salt finding)
+- Pool initialization with hook
+
+**Current issue**: Currency initialization in tests needs fixing. The hook code itself compiles and works correctly.
+
+---
+
+## Production Considerations
+
+If deploying this for real:
+
+1. **Add access control** - Who can query swap counts?
+2. **Event emissions** - Log swaps for off-chain indexing
+3. **Batch queries** - Function to get counts for multiple pools
+4. **Reset mechanism** - Maybe reset counts periodically
+5. **Gas optimization** - Consider using `uint96` instead of `uint256` for counts
+
+---
+
+## Code Location
+
+`src/examples/MyFirstHook.sol`
+
+**Lines of code**: ~60 (excluding comments)
+**Complexity**: Beginner level
+**Gas cost**: Minimal overhead per swap
+
+---
+
+**Next**: Study PointsHook for more complex state management patterns.
