@@ -16,3 +16,21 @@ import {PoolId, PoolIdLibrary} from "@uniswap/v4-core/src/types/PoolId.sol";
 import {BalanceDelta} from "@uniswap/v4-core/src/types/BalanceDelta.sol";
 import {BeforeSwapDelta, BeforeSwapDeltaLibrary} from "@uniswap/v4-core/src/types/BeforeSwapDelta.sol";
 import {SwapParams, ModifyLiquidityParams} from "@uniswap/v4-core/src/types/PoolOperation.sol";
+
+contract PointsHook is BaseHook {
+    using PoolIdLibrary for PoolKey;
+
+    mapping(address => mapping(PoolId => uint256)) public userPoints;
+    mapping(PoolId => uint256) public totalSwaps;
+    mapping(PoolId => uint256) public totalLiquidityOps;
+
+    uint256 public constant POINTS_PER_SWAP = 10;
+    uint256 public constant POINTS_PER_LIQUIDITY = 50;
+
+    constructor(IPoolManager _poolManager) BaseHook(_poolManager) {}
+
+    function getHookPermissions() public pure override returns (Hooks.Permissions memory) {
+        return Hooks.Permissions({
+            beforeInitialize: false,
+            afterInitialize: false,
+            beforeAddLiquidity: false,
