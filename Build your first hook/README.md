@@ -258,3 +258,71 @@ This matters when building hooks that modify swap amounts or collect fees.
 | State | Single mapping | Nested mappings |
 | Hooks used | 2 (swap only) | 2 (swap + liquidity) |
 | Lines of code | ~60 | ~90 |
+| Production-ready | No | Closer, needs work |
+| Purpose | Learning mechanics | Real use case |
+
+### Uniswap V3 vs V4 (Hooks)
+
+**V3**: Fixed functionality. Want custom logic? Fork the entire protocol.
+
+**V4**: Hooks enable custom logic WITHOUT forking. This repository proves it - I added loyalty points to Uniswap pools in ~90 lines of code.
+
+---
+
+## Next Steps
+
+### Immediate
+- [x] Build and compile both hooks
+- [x] Write comprehensive documentation
+- [ ] Fix test currency initialization
+- [ ] Deploy to Sepolia testnet
+
+### Short-term
+- [ ] Build a third hook from scratch (own idea)
+- [ ] Implement hookData passing for user identification
+- [ ] Create subgraph for points indexing
+- [ ] Build simple frontend for points dashboard
+
+### Long-term
+- [ ] Design complex hook (MEV protection, dynamic fees, etc.)
+- [ ] Audit and optimize gas usage
+- [ ] Contribute hook examples back to community
+
+---
+
+## Resources
+
+**Official Docs:**
+- [Uniswap V4 Documentation](https://docs.uniswap.org/contracts/v4/overview)
+- [v4-core Repository](https://github.com/Uniswap/v4-core)
+- [v4-periphery Repository](https://github.com/Uniswap/v4-periphery)
+
+**Learning Materials:**
+- Tom Wade's workshop materials (Week 2)
+- v4-core test examples
+- Community hook examples
+
+**Tools:**
+- [Foundry Book](https://book.getfoundry.sh/)
+- [Solidity Documentation](https://docs.soliditylang.org/)
+
+---
+
+## Acknowledgments
+
+Special thanks to:
+- **Tom Wade** for the excellent workshop and clear explanations
+- **Uniswap team** for building an incredible protocol and making it extensible
+- **Atrium Academy** for organizing the incubator program
+
+---
+
+## License
+
+MIT License - See SPDX identifiers in source files
+
+---
+
+**Allan Robinson**
+*January 27, 2026*
+*Week 2 of Uniswap V4 Hooks Incubator*
