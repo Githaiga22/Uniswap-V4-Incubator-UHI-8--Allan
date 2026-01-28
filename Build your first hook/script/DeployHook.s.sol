@@ -30,3 +30,15 @@ contract DeployHook is Script {
             Hooks.BEFORE_SWAP_FLAG | Hooks.AFTER_SWAP_FLAG
         );
 
+        // For production deployment, you'd want to mine the correct salt
+        // For now, we'll deploy with a simple salt
+        bytes32 salt = bytes32(uint256(0x1));
+
+        MyFirstHook hook = new MyFirstHook{salt: salt}(IPoolManager(poolManager));
+
+        console.log("Hook deployed at:", address(hook));
+        console.log("Hook permissions flags:", uint160(address(hook)) & 0x3FFF);
+
+        vm.stopBroadcast();
+    }
+}
