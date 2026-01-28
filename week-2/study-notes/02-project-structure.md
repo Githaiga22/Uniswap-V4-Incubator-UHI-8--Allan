@@ -208,3 +208,108 @@ Purpose: Custom interfaces for your hooks
 ```
 Example future files:
   • IRewardCalculator.sol
+  • IWhitelistManager.sol
+  • IPriceOracle.sol
+```
+
+---
+
+### Dependencies (lib/)
+
+#### lib/v4-core/
+The main Uniswap v4 protocol contracts.
+
+**Key Files You'll Reference:**
+
+```
+lib/v4-core/src/
+├── PoolManager.sol              # Main contract managing all pools
+├── interfaces/
+│   ├── IPoolManager.sol        # Interface we import
+│   └── IHooks.sol              # Hook interface definition
+├── types/
+│   ├── BalanceDelta.sol        # Token balance changes
+│   ├── BeforeSwapDelta.sol     # Pre-swap modifications
+│   ├── Currency.sol            # Token wrapper
+│   ├── PoolId.sol              # Pool identifier
+│   ├── PoolKey.sol             # Pool full description
+│   ├── PoolOperation.sol       # Swap/liquidity params
+│   └── Slot0.sol               # Pool state
+└── libraries/
+    └── Hooks.sol               # Permission flags & validation
+```
+
+**Don't modify these!** They're dependencies. We import and use them.
+
+#### lib/v4-periphery/
+Helper contracts built on top of v4-core.
+
+**Key File:**
+```
+lib/v4-periphery/src/utils/
+└── BaseHook.sol                # Base class for all hooks
+    • Handles callback routing
+    • Validates permissions
+    • Enforces correct patterns
+```
+
+This is what our hooks inherit from!
+
+#### lib/forge-std/
+Foundry's testing and scripting library.
+
+```
+Key imports:
+  • Test.sol     - Base test contract
+  • console.sol  - Console logging
+  • Script.sol   - Deployment scripts
+```
+
+---
+
+## 🔄 How Files Connect
+
+### Import Flow
+
+```
+Your Hook (MyFirstHook.sol)
+│
+├─ import {BaseHook} from "@uniswap/v4-periphery/..."
+│  │
+│  └─▶ lib/v4-periphery/src/utils/BaseHook.sol
+│      │
+│      ├─ import {IPoolManager} from "@uniswap/v4-core/..."
+│      │  └─▶ lib/v4-core/src/interfaces/IPoolManager.sol
+│      │
+│      └─ import {Hooks} from "@uniswap/v4-core/..."
+│         └─▶ lib/v4-core/src/libraries/Hooks.sol
+│
+├─ import {PoolKey} from "@uniswap/v4-core/..."
+│  └─▶ lib/v4-core/src/types/PoolKey.sol
+│
+└─ import {BalanceDelta} from "@uniswap/v4-core/..."
+   └─▶ lib/v4-core/src/types/BalanceDelta.sol
+```
+
+### Runtime Flow
+
+```
+┌──────────────────────────────────────────────────────┐
+│  User swaps via Router                               │
+└─────────────┬────────────────────────────────────────┘
+              │
+              ▼
+┌──────────────────────────────────────────────────────┐
+│  PoolManager.swap()                                  │
+│  (lib/v4-core/src/PoolManager.sol)                   │
+└─────────────┬────────────────────────────────────────┘
+              │
+              ▼
+┌──────────────────────────────────────────────────────┐
+│  Checks if pool has hook                             │
+│  Calls hook.beforeSwap()                             │
+└─────────────┬────────────────────────────────────────┘
+              │
+              ▼
+┌──────────────────────────────────────────────────────┐
+│  BaseHook.beforeSwap() (public)                      │
