@@ -386,3 +386,104 @@ This is by design - keeps the protocol secure.
 ```
 Week 1: Understanding        Week 2: Building
 ├─ Read documentation       ├─ Write code
+├─ Study architecture       ├─ Debug errors
+├─ Learn concepts           ├─ Make decisions
+└─ Passive absorption       └─ Active creation
+
+Week 1 = Input              Week 2 = Output
+```
+
+The knowledge from Week 1 (singleton design, flash accounting, ticks, etc.) directly informed my implementation decisions this week. Everything connected.
+
+---
+
+## Study Materials Created
+
+### Study Notes
+```
+01-getting-started.md           (Tutorial walkthrough)
+02-project-structure.md         (Codebase navigation)
+03-code-walkthrough.md          (Line-by-line explanations)
+04-faq.md                       (Common questions)
+05-my-first-hook-implementation.md (Hook 1 analysis)
+06-points-hook-implementation.md   (Hook 2 analysis)
+07-key-learnings-week2.md       (Meta reflections)
+```
+
+### Code Deliverables
+```
+Build your first hook/
+├─ src/examples/
+│  ├─ MyFirstHook.sol           (60 lines)
+│  └─ PointsHook.sol            (90 lines)
+├─ test/
+│  ├─ MyFirstHook.t.sol         (Test suite)
+│  ├─ PointsHook.t.sol          (Test suite)
+│  └─ utils/HookMiner.sol       (Address mining)
+└─ README.md                    (Project documentation)
+```
+
+---
+
+## Challenges and Solutions
+
+### Challenge 1: Address Mining Confusion
+**Problem**: Didn't understand why deployment failed initially.
+**Solution**: Tom explained the permission-encoded address requirement. HookMiner solved it.
+
+### Challenge 2: Return Types
+**Problem**: Functions reverting with unclear errors.
+**Solution**: Return values must match exact types. BaseHook.selector must be returned.
+
+### Challenge 3: Testing Setup
+**Problem**: Test currency initialization failed.
+**Solution**: Ongoing. Hook code works, test harness needs fixing.
+
+### Challenge 4: State Design
+**Problem**: How to track per-user per-pool data efficiently?
+**Solution**: Nested mappings. First key user, second key pool.
+
+---
+
+## Next Week Preview
+
+Week 3 will focus on:
+- Advanced hook patterns (dynamic fees, custom curves)
+- Hook composition and interactions
+- Gas optimization techniques
+- Security considerations
+- Production deployment
+
+The goal: Design and build a complex hook from scratch that demonstrates mastery of the concepts.
+
+---
+
+## Resources Used
+
+**Primary**:
+- Tom Wade's live workshop (3 hours)
+- V4-core source code (especially PoolManager.sol)
+- V4-periphery BaseHook implementation
+- Foundry documentation
+
+**Community**:
+- Uniswap V4 Discord
+- Hook examples repository
+- RareSkills tutorials
+
+---
+
+## Personal Reflection
+
+This week felt different. Week 1 was absorbing information. Week 2 was creating something tangible.
+
+The moment the hooks compiled and I saw the counter increment in tests - that's when it clicked. Hooks aren't mysterious. They're just contracts following a pattern. A powerful pattern, but a understandable one.
+
+The V4 architecture makes sense now. The design decisions (singleton, hooks, flash accounting) enable this plugin system. Without those foundations, hooks wouldn't work.
+
+I'm ready to build something original next week.
+
+---
+
+**Allan Robinson**
+Week 2 Complete - January 27, 2026
