@@ -88,3 +88,33 @@ function _beforeSwap(...) internal override returns (bytes4, BeforeSwapDelta, ui
 ### 4. afterSwap Logic
 Currently empty but demonstrates the pattern:
 
+```solidity
+function _afterSwap(...) internal override returns (bytes4, int128) {
+    return (BaseHook.afterSwap.selector, 0);
+}
+```
+
+Could add event emissions, reward distribution, or state updates here.
+
+---
+
+## What I Learned
+
+**Pattern Recognition**: Hooks follow a strict contract:
+1. Inherit from `BaseHook`
+2. Declare permissions in `getHookPermissions()`
+3. Implement `_hookName()` internal functions
+4. Return correct selector + data
+
+**Address Mining**: The hook address encodes its permissions in the last bytes. Tom showed us how `HookMiner.sol` brute-forces salt values until finding a valid address.
+
+**Return Values Matter**: Each hook function must return its selector. This validates execution without external state checks - clever gas optimization.
+
+**Minimal Surface Area**: Start simple. MyFirstHook does one thing well. Can always extend later.
+
+---
+
+## Testing Observations
+
+The test setup requires:
+- PoolManager deployment
