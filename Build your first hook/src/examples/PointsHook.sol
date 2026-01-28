@@ -70,3 +70,22 @@ contract PointsHook is BaseHook {
         BalanceDelta feesAccrued,
         bytes calldata hookData
     ) internal override returns (bytes4, BalanceDelta) {
+        PoolId poolId = key.toId();
+        userPoints[sender][poolId] += POINTS_PER_LIQUIDITY;
+        totalLiquidityOps[poolId]++;
+
+        return (BaseHook.afterAddLiquidity.selector, BalanceDelta.wrap(0));
+    }
+
+    function getPoints(address user, PoolId poolId) external view returns (uint256) {
+        return userPoints[user][poolId];
+    }
+
+    function getSwapCount(PoolId poolId) external view returns (uint256) {
+        return totalSwaps[poolId];
+    }
+
+    function getLiquidityOpCount(PoolId poolId) external view returns (uint256) {
+        return totalLiquidityOps[poolId];
+    }
+}
