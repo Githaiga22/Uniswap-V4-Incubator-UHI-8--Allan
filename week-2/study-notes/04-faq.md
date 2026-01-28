@@ -1838,3 +1838,465 @@ Scenario A: Alice wants to buy USDC with ETH
 │  })                                                      │
 │                                                          │
 │  Flow:                                                   │
+│  ETH (Token0) ──→ Pool ──→ USDC (Token1)                 │
+└──────────────────────────────────────────────────────────┘
+
+Scenario B: Bob wants to buy ETH with USDC
+┌──────────────────────────────────────────────────────────┐
+│  Bob's Trade:                                            │
+│  • Give: 1800 USDC                                       │
+│  • Get: ~1 ETH                                           │
+│                                                          │
+│  Code:                                                   │
+│  SwapParams({                                            │
+│      zeroForOne: false,     ← USDC (1) → ETH (0)         │
+│      amountSpecified: -1800e6, ← Exact input: 1800 USDC  │
+│      ...                                                 │
+│  })                                                      │
+│                                                          │
+│  Flow:                                                   │
+│  USDC (Token1) ──→ Pool ──→ ETH (Token0)                 │
+└──────────────────────────────────────────────────────────┘
+```
+
+### 🔢 How amount0 and amount1 Change
+
+```
+Initial Pool State:
+┌──────────────────────────────────┐
+│  Reserve0 (ETH):  1000           │
+│  Reserve1 (USDC): 1,800,000      │
+│  Price: 1 ETH = 1800 USDC        │
+└──────────────────────────────────┘
+
+SWAP WITH zeroForOne = true:
+┌──────────────────────────────────────────────────────────┐
+│  Alice swaps 1 ETH → ? USDC                              │
+│                                                          │
+│  Before:                                                 │
+│  Reserve0: 1000 ETH                                      │
+│  Reserve1: 1,800,000 USDC                                │
+│                                                          │
+│  Change (BalanceDelta):                                  │
+│  amount0: +1 ETH      (Pool gained ETH)                  │
+│  amount1: -1800 USDC  (Pool gave USDC)                   │
+│                                                          │
+│  After:                                                  │
+│  Reserve0: 1001 ETH   (increased)                        │
+│  Reserve1: 1,798,200 USDC (decreased)                    │
+└──────────────────────────────────────────────────────────┘
+
+SWAP WITH zeroForOne = false:
+┌──────────────────────────────────────────────────────────┐
+│  Bob swaps 1800 USDC → ? ETH                             │
+│                                                          │
+│  Before:                                                 │
+│  Reserve0: 1001 ETH                                      │
+│  Reserve1: 1,798,200 USDC                                │
+│                                                          │
+│  Change (BalanceDelta):                                  │
+│  amount0: -1 ETH      (Pool gave ETH)                    │
+│  amount1: +1800 USDC  (Pool gained USDC)                 │
+│                                                          │
+│  After:                                                  │
+│  Reserve0: 1000 ETH   (decreased)                        │
+│  Reserve1: 1,800,000 USDC (increased)                    │
+└──────────────────────────────────────────────────────────┘
+```
+
+### 💡 Memory Trick
+
+```
+┌────────────────────────────────────────────────────────┐
+│  How to Remember:                                      │
+│                                                        │
+│  zeroForOne = true                                     │
+│  "Zero FOR One"                                        │
+│  "Token ZERO FOR Token ONE"                            │
+│  Token0 → Token1                                       │
+│                                                        │
+│  zeroForOne = false                                    │
+│  "NOT Zero for One"                                    │
+│  "One FOR Zero"                                        │
+│  Token1 → Token0                                       │
+└────────────────────────────────────────────────────────┘
+```
+
+### 🎨 Color-Coded Visualization
+
+```
+Pool: ETH/USDC
+
+zeroForOne = TRUE:
+  🟦 ETH (Token0)  ──────→  🟩 USDC (Token1)
+  Input                     Output
+  Amount0 increases         Amount1 decreases
+  (+)                       (-)
+
+zeroForOne = FALSE:
+  🟦 ETH (Token0)  ←──────  🟩 USDC (Token1)
+  Output                    Input
+  Amount0 decreases         Amount1 increases
+  (-)                       (+)
+```
+
+### 📝 Code Example in Hook
+
+```solidity
+function _afterSwap(
+    address sender,
+    PoolKey calldata key,
+    SwapParams calldata params,
+    BalanceDelta delta,
+    bytes calldata hookData
+) internal override returns (bytes4, int128) {
+    // Determine which direction the swap went
+    if (params.zeroForOne) {
+        // User swapped Token0 → Token1
+        // amount0 will be positive (pool received Token0)
+        // amount1 will be negative (pool gave Token1)
+
+        int128 token0In = delta.amount0();   // Positive
+        int128 token1Out = -delta.amount1(); // Make positive
+
+        console.log("Swapped %d Token0 for %d Token1", token0In, token1Out);
+    } else {
+        // User swapped Token1 → Token0
+        // amount1 will be positive (pool received Token1)
+        // amount0 will be negative (pool gave Token0)
+
+        int128 token1In = delta.amount1();   // Positive
+        int128 token0Out = -delta.amount0(); // Make positive
+
+        console.log("Swapped %d Token1 for %d Token0", token1In, token0Out);
+    }
+
+    return (BaseHook.afterSwap.selector, 0);
+}
+```
+
+**Summary:**
+- ✅ `zeroForOne = true` → Swap Token0 for Token1
+- ✅ `zeroForOne = false` → Swap Token1 for Token0
+- 💱 The currencies indeed swap based on this flag!
+
+---
+
+## Question 10: Understanding Negative Deltas
+### "delta.amount0() is negative right? Since we set zeroForOne true and we swap token0 for token1?"
+
+**Almost correct, but opposite!** When `zeroForOne = true`, `delta.amount0()` is actually **positive**, not negative. Let me explain why this is confusing at first.
+
+### 🧠 The Mental Model: Pool's Perspective
+
+```
+KEY INSIGHT:
+BalanceDelta shows changes FROM THE POOL'S PERSPECTIVE
+Not from the user's perspective!
+
+┌──────────────────────────────────────────────────────┐
+│  User's View (What you might think):                 │
+│  "I'm giving away Token0, so amount0 is negative"    │
+│                                                      │
+│  Pool's View (What BalanceDelta actually shows):     │
+│  "I'm receiving Token0, so amount0 is positive"      │
+└──────────────────────────────────────────────────────┘
+```
+
+### 📊 Visual Example: zeroForOne = true
+
+```
+SWAP: 1 ETH → 1800 USDC (zeroForOne = true)
+
+User's Perspective:
+┌────────────────────────────────────────┐
+│  User (Alice)                          │
+│  Before:  10 ETH, 0 USDC               │
+│  After:   9 ETH, 1800 USDC             │
+│                                        │
+│  Change for Alice:                     │
+│  ETH:  -1     (gave away)              │
+│  USDC: +1800  (received)               │
+└────────────────────────────────────────┘
+        │ Transfers
+        ▼
+┌────────────────────────────────────────┐
+│  Pool                                  │
+│  Before:  1000 ETH, 1,800,000 USDC     │
+│  After:   1001 ETH, 1,798,200 USDC     │
+│                                        │
+│  Change for Pool:                      │
+│  ETH:  +1     (received) ◄─────────┐   │
+│  USDC: -1800  (gave away)          │   │
+│                                    │   │
+│  BalanceDelta:                     │   │
+│  amount0 = +1 ✓ ───────────────────┘   │
+│  amount1 = -1800 ✓                     │
+└────────────────────────────────────────┘
+
+The BalanceDelta represents the POOL's change!
+```
+
+### 🔄 Both Directions Explained
+
+```
+DIRECTION 1: zeroForOne = true
+┌──────────────────────────────────────────────────────┐
+│  Trade: Token0 → Token1                              │
+│                                                      │
+│  User:                                               │
+│  • Sends Token0 (gives)                              │
+│  • Receives Token1 (gets)                            │
+│                                                      │
+│  Pool:                                               │
+│  • Receives Token0 (amount0 INCREASES) → Positive ✓  │
+│  • Sends Token1 (amount1 DECREASES) → Negative ✓     │
+│                                                      │
+│  BalanceDelta:                                       │
+│  • amount0 = POSITIVE (e.g., +1e18)                  │
+│  • amount1 = NEGATIVE (e.g., -1800e6)                │
+└──────────────────────────────────────────────────────┘
+
+DIRECTION 2: zeroForOne = false
+┌──────────────────────────────────────────────────────┐
+│  Trade: Token1 → Token0                              │
+│                                                      │
+│  User:                                               │
+│  • Sends Token1 (gives)                              │
+│  • Receives Token0 (gets)                            │
+│                                                      │
+│  Pool:                                               │
+│  • Sends Token0 (amount0 DECREASES) → Negative ✓     │
+│  • Receives Token1 (amount1 INCREASES) → Positive ✓  │
+│                                                      │
+│  BalanceDelta:                                       │
+│  • amount0 = NEGATIVE (e.g., -1e18)                  │
+│  • amount1 = POSITIVE (e.g., +1800e6)                │
+└──────────────────────────────────────────────────────┘
+```
+
+### 🏦 Bank Account Analogy
+
+```
+Think of the Pool as a bank account:
+
+Your Bank Account:
+┌────────────────────────────────────────┐
+│  You deposit $100                      │
+│  Your balance change: +$100            │
+│  (You received money)                  │
+│                                        │
+│  You withdraw $50                      │
+│  Your balance change: -$50             │
+│  (You gave money)                      │
+└────────────────────────────────────────┘
+
+Pool's Token0 Account:
+┌────────────────────────────────────────┐
+│  User swaps Token0 → Token1            │
+│  (zeroForOne = true)                   │
+│                                        │
+│  Pool receives Token0                  │
+│  Pool's Token0 balance change: +1 ETH  │
+│  → amount0 = POSITIVE ✓                │
+│                                        │
+│  Pool sends Token1                     │
+│  Pool's Token1 balance change: -1800 USDC │
+│  → amount1 = NEGATIVE ✓                │
+└────────────────────────────────────────┘
+```
+
+### 💻 Code Example with Real Values
+
+```solidity
+function _afterSwap(
+    address sender,
+    PoolKey calldata key,
+    SwapParams calldata params,
+    BalanceDelta delta,
+    bytes calldata hookData
+) internal override returns (bytes4, int128) {
+    // Example: User swaps 1 ETH → ? USDC (zeroForOne = true)
+
+    int128 amount0 = delta.amount0();  // What's this value?
+    int128 amount1 = delta.amount1();  // What's this value?
+
+    if (params.zeroForOne) {
+        // User sent ETH, received USDC
+
+        console.log("amount0:", amount0);  // Output: amount0: 1000000000000000000 (1e18, POSITIVE!)
+        console.log("amount1:", amount1);  // Output: amount1: -1800000000 (-1800e6, NEGATIVE!)
+
+        // Pool RECEIVED Token0 (ETH) → Positive
+        require(amount0 > 0, "amount0 should be positive");
+
+        // Pool SENT Token1 (USDC) → Negative
+        require(amount1 < 0, "amount1 should be negative");
+
+        // To get the actual amounts traded (as positive numbers):
+        uint256 ethReceived = uint256(uint128(amount0));  // 1 ETH
+        uint256 usdcSent = uint256(uint128(-amount1));    // 1800 USDC
+    } else {
+        // User sent USDC, received ETH
+
+        console.log("amount0:", amount0);  // Output: amount0: -1000000000000000000 (-1e18, NEGATIVE!)
+        console.log("amount1:", amount1);  // Output: amount1: 1800000000 (1800e6, POSITIVE!)
+
+        // Pool SENT Token0 (ETH) → Negative
+        require(amount0 < 0, "amount0 should be negative");
+
+        // Pool RECEIVED Token1 (USDC) → Positive
+        require(amount1 > 0, "amount1 should be positive");
+
+        // To get the actual amounts traded:
+        uint256 ethSent = uint256(uint128(-amount0));     // 1 ETH
+        uint256 usdcReceived = uint256(uint128(amount1)); // 1800 USDC
+    }
+
+    return (BaseHook.afterSwap.selector, 0);
+}
+```
+
+### 📐 Sign Convention Table
+
+```
+┌───────────────┬──────────────┬───────────┬───────────┐
+│ zeroForOne    │ Direction    │ amount0   │ amount1   │
+├───────────────┼──────────────┼───────────┼───────────┤
+│ true          │ Token0→Token1│ POSITIVE ✓│ NEGATIVE ✓│
+│               │ (e.g.,ETH→USDC)│ (received)│ (sent)    │
+├───────────────┼──────────────┼───────────┼───────────┤
+│ false         │ Token1→Token0│ NEGATIVE ✓│ POSITIVE ✓│
+│               │(e.g.,USDC→ETH)│ (sent)    │ (received)│
+└───────────────┴──────────────┴───────────┴───────────┘
+
+Rule of thumb:
+• The token being SOLD → Pool receives → POSITIVE delta
+• The token being BOUGHT → Pool sends → NEGATIVE delta
+```
+
+### 🎯 Common Confusion Points
+
+```
+❌ WRONG THINKING:
+"I'm swapping Token0, so I'm losing Token0,
+ so amount0 should be negative"
+
+This is USER perspective!
+
+✅ CORRECT THINKING:
+"I'm swapping Token0, so the POOL receives Token0,
+ so amount0 (from pool's view) is POSITIVE"
+
+This is POOL perspective!
+
+Why pool perspective?
+• BalanceDelta represents state change of the pool
+• Pool is the entity tracking its own reserves
+• Your hook is querying the pool's balance change
+• User's change is the opposite of pool's change
+```
+
+### 🔍 Practical Usage in Hooks
+
+```solidity
+// Example: Track volume for each direction
+
+mapping(PoolId => uint256) public token0ToToken1Volume;
+mapping(PoolId => uint256) public token1ToToken0Volume;
+
+function _afterSwap(
+    address sender,
+    PoolKey calldata key,
+    SwapParams calldata params,
+    BalanceDelta delta,
+    bytes calldata hookData
+) internal override returns (bytes4, int128) {
+    PoolId poolId = key.toId();
+
+    if (params.zeroForOne) {
+        // amount0 is POSITIVE (pool received)
+        // amount1 is NEGATIVE (pool sent)
+
+        uint256 volumeIn = uint256(uint128(delta.amount0()));  // What pool received
+        token0ToToken1Volume[poolId] += volumeIn;
+    } else {
+        // amount0 is NEGATIVE (pool sent)
+        // amount1 is POSITIVE (pool received)
+
+        uint256 volumeIn = uint256(uint128(delta.amount1()));  // What pool received
+        token1ToToken0Volume[poolId] += volumeIn;
+    }
+
+    return (BaseHook.afterSwap.selector, 0);
+}
+```
+
+### 🎓 Summary
+
+```
+┌──────────────────────────────────────────────────────┐
+│  Key Takeaways:                                      │
+│                                                      │
+│  1. BalanceDelta is from the POOL's perspective      │
+│     not the user's perspective                       │
+│                                                      │
+│  2. When zeroForOne = true:                          │
+│     • amount0 = POSITIVE (pool receives Token0)      │
+│     • amount1 = NEGATIVE (pool sends Token1)         │
+│                                                      │
+│  3. When zeroForOne = false:                         │
+│     • amount0 = NEGATIVE (pool sends Token0)         │
+│     • amount1 = POSITIVE (pool receives Token1)      │
+│                                                      │
+│  4. The sign convention:                             │
+│     • POSITIVE = Pool balance increased              │
+│     • NEGATIVE = Pool balance decreased              │
+│                                                      │
+│  5. To get user's perspective:                       │
+│     • Flip the signs!                                │
+│     • If pool gained (+), user lost (-)              │
+│     • If pool lost (-), user gained (+)              │
+└──────────────────────────────────────────────────────┘
+```
+
+### 🔄 Quick Reference Diagram
+
+```
+                    zeroForOne = true
+     User                                  Pool
+     ┌──────────┐                    ┌──────────┐
+     │  Token0  │ ───────────────→   │  Token0  │
+     │  (-1)    │      Sends         │  (+1) ✓  │  amount0 = POSITIVE
+     └──────────┘                    └──────────┘
+     ┌──────────┐                    ┌──────────┐
+     │  Token1  │   ←───────────────  │  Token1  │
+     │  (+1800) │      Receives       │  (-1800)✓│  amount1 = NEGATIVE
+     └──────────┘                    └──────────┘
+
+
+                    zeroForOne = false
+     User                                  Pool
+     ┌──────────┐                    ┌──────────┐
+     │  Token0  │   ←───────────────  │  Token0  │
+     │  (+1)    │      Receives       │  (-1) ✓  │  amount0 = NEGATIVE
+     └──────────┘                    └──────────┘
+     ┌──────────┐                    ┌──────────┐
+     │  Token1  │ ───────────────→   │  Token1  │
+     │  (-1800) │      Sends         │  (+1800)✓│  amount1 = POSITIVE
+     └──────────┘                    └──────────┘
+
+             BalanceDelta shows the POOL column!
+```
+
+---
+
+## 📚 Further Reading
+
+- [Uniswap v4 Documentation](https://docs.uniswap.org/contracts/v4/overview)
+- [Foundry Book](https://book.getfoundry.sh/)
+- [Solidity Documentation](https://docs.soliditylang.org/)
+
+---
+
+*This FAQ is a living document. As you learn more, add your own questions and insights!*
