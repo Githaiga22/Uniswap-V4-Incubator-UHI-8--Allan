@@ -220,3 +220,77 @@ From idea to deployment:
 4. Deployment Phase
    ├─ Mine production address
    ├─ Deploy with create2
+   ├─ Verify on Etherscan
+   └─ Initialize pools with hook
+```
+
+**Current status**: Completed steps 1-2 for both example hooks. Step 3 needs currency initialization fix.
+
+---
+
+## Gotchas and Debugging Tips
+
+### Gotcha 1: "HookAddressNotValid"
+**Cause**: Address bits don't match permissions
+**Fix**: Run HookMiner longer or adjust MAX_LOOP
+
+### Gotcha 2: "HookNotImplemented"
+**Cause**: Enabled permission but didn't implement function
+**Fix**: Either disable permission or add `_hookName()` function
+
+### Gotcha 3: "msg.sender issues"
+**Cause**: Expecting user address but getting PoolManager
+**Fix**: Pass user via hookData or use custom router
+
+### Gotcha 4: "Delta mismatches"
+**Cause**: Modifying delta incorrectly
+**Fix**: Start with ZERO_DELTA, only modify if you understand accounting
+
+### Gotcha 5: "Selector reverts"
+**Cause**: Returning wrong selector
+**Fix**: Always return `BaseHook.hookName.selector`
+
+---
+
+## Comparison to Other DeFi Hooks
+
+### Uniswap V3 (No hooks)
+- Fixed fee tiers
+- No custom logic
+- Minimal gas overhead
+- **Result**: Efficient but inflexible
+
+### Uniswap V4 (Hooks enabled)
+- Custom fee logic
+- Permissioned pools
+- Dynamic parameters
+- **Tradeoff**: Slight gas increase for infinite flexibility
+
+### Curve (Built-in pools)
+- Each pool type is separate contract
+- Fork code for new mechanics
+- **Problem**: Code duplication, slow innovation
+
+### Balancer V3 (Hooks coming)
+- Similar to Uniswap V4 approach
+- Industry converging on plugin architecture
+
+**Observation**: Hooks are the future of DEX design. They enable permissionless innovation without forking.
+
+---
+
+## What I'd Build Next
+
+Given this knowledge, interesting hook ideas:
+
+1. **MEV Tax Hook**
+   - Detect sandwich attacks via price impact
+   - Charge higher fees on toxic flow
+   - Rebate to LPs
+
+2. **Refer-to-Earn Hook**
+   - Track referral codes in hookData
+   - Award points to referrer + referee
+   - Build viral growth mechanic
+
+3. **LP Insurance Hook**
