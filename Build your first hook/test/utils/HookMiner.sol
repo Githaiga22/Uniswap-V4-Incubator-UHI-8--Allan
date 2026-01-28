@@ -25,3 +25,12 @@ library HookMiner {
     ) external pure returns (address, bytes32) {
         address hookAddress;
         bytes memory creationCodeWithArgs = abi.encodePacked(creationCode, constructorArgs);
+
+        uint256 salt;
+        for (salt = 0; salt < MAX_LOOP; salt++) {
+            hookAddress = computeAddress(deployer, salt, creationCodeWithArgs);
+            if (uint160(hookAddress) & FLAG_MASK == flags) {
+                return (hookAddress, bytes32(salt));
+            }
+        }
+        revert("HookMiner: could not find salt");
