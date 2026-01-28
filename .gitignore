@@ -21,3 +21,8 @@ Thumbs.db
 
 # Node modules (if added later)
 node_modules/
+
+# Foundry build artifacts
+Build your first hook/cache/
+Build your first hook/out/
+Build your first hook/lib/forge-std/
