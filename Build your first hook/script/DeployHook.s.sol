@@ -22,3 +22,11 @@ contract DeployHook is Script {
         address poolManager = vm.envAddress("POOL_MANAGER_ADDRESS");
 
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+
+        vm.startBroadcast(deployerPrivateKey);
+
+        // Calculate the expected hook address and salt
+        uint160 flags = uint160(
+            Hooks.BEFORE_SWAP_FLAG | Hooks.AFTER_SWAP_FLAG
+        );
+
