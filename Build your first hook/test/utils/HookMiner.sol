@@ -34,3 +34,15 @@ library HookMiner {
             }
         }
         revert("HookMiner: could not find salt");
+    }
+
+    function computeAddress(address deployer, uint256 salt, bytes memory creationCode)
+        internal
+        pure
+        returns (address)
+    {
+        return address(
+            uint160(uint256(keccak256(abi.encodePacked(bytes1(0xff), deployer, salt, keccak256(creationCode)))))
+        );
+    }
+}
