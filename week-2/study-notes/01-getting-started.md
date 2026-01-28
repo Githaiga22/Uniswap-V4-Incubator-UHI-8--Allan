@@ -283,3 +283,98 @@ function testLargeSwapBonusPoints() public {
 
 ```solidity
 // Add to PointsHook.sol
+
+// New state variable
+address[] public allUsers;
+mapping(address => bool) private hasUserSwapped;
+
+// Modify _afterSwap to track users
+function _afterSwap(...) internal override returns (bytes4, int128) {
+    PoolId poolId = key.toId();
+
+    // Track new users
+    if (!hasUserSwapped[sender]) {
+        allUsers.push(sender);
+        hasUserSwapped[sender] = true;
+    }
+
+    userPoints[sender][poolId] += POINTS_PER_SWAP;
+    totalSwaps[poolId]++;
+
+    return (BaseHook.afterSwap.selector, 0);
+}
+
+// New function: Get top 3 users
+function getTop3(PoolId poolId) external view returns (
+    address[3] memory topUsers,
+    uint256[3] memory topPoints
+) {
+    // Simple bubble sort (ok for small arrays)
+    for (uint i = 0; i < allUsers.length && i < 3; i++) {
+        address topUser = allUsers[0];
+        uint256 topPoint = userPoints[allUsers[0]][poolId];
+
+        for (uint j = 1; j < allUsers.length; j++) {
+            if (userPoints[allUsers[j]][poolId] > topPoint) {
+                topUser = allUsers[j];
+                topPoint = userPoints[allUsers[j]][poolId];
+            }
+        }
+
+        topUsers[i] = topUser;
+        topPoints[i] = topPoint;
+    }
+}
+```
+
+## 🔧 Common Operations
+
+### Compile Code
+```bash
+forge build
+```
+
+### Run Tests
+```bash
+# All tests
+forge test
+
+# Verbose (shows console.log output)
+forge test -vv
+
+# Very verbose (shows trace)
+forge test -vvvv
+
+# Specific test
+forge test --match-test testSwapAwardsPoints
+```
+
+### Clean Build Artifacts
+```bash
+forge clean
+```
+
+### Format Code
+```bash
+forge fmt
+```
+
+### Check Gas Usage
+```bash
+forge test --gas-report
+```
+
+### Generate Coverage Report
+```bash
+forge coverage
+```
+
+## 🐛 Troubleshooting
+
+### "Hook address mismatch"
+```
+Error: Hook address mismatch
+```
+
+**Solution:** The HookMiner didn't find a valid salt. This is rare but can happen.
+- Increase MAX_LOOP in HookMiner.sol
