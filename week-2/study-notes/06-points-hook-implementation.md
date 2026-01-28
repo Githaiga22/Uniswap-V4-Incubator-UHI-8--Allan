@@ -190,3 +190,53 @@ To make this production-ready:
 ### Phase 4: Advanced Features
 - [ ] Tiered rewards (more points for large trades)
 - [ ] Streak bonuses (daily active users)
+- [ ] Pool-specific multipliers
+- [ ] Governance: Point holders vote on rates
+
+---
+
+## Architecture Comparison
+
+```
+MyFirstHook vs PointsHook:
+
+MyFirstHook                    PointsHook
+├─ Single mapping              ├─ Nested mapping
+├─ 2 hooks (swap only)         ├─ 4 hooks (swap + liquidity)
+├─ Global state                ├─ Per-user state
+├─ No query functions          ├─ Query functions included
+├─ ~60 lines                   ├─ ~100 lines
+└─ Beginner complexity         └─ Intermediate complexity
+```
+
+PointsHook is what you'd actually build for a real product. MyFirstHook is for learning the mechanics.
+
+---
+
+## Code Location
+
+`src/examples/PointsHook.sol`
+
+**Lines of code**: ~100 (excluding comments)
+**Complexity**: Intermediate level
+**Gas cost**: Moderate (nested mapping writes)
+
+---
+
+## Open Questions
+
+1. **Point inflation**: What prevents users from creating spam swaps to farm points?
+   - Need minimum trade size or anti-sybil mechanism
+
+2. **Point redemption**: How do users spend/claim their points?
+   - Separate redemption contract? NFT minting? Token claims?
+
+3. **Cross-pool points**: Should points be pool-specific or universal?
+   - Current design: pool-specific. Could add aggregation layer.
+
+4. **Historical tracking**: Do we need point history or just current balance?
+   - Events handle history. State only stores current balance for gas efficiency.
+
+---
+
+**Next**: Study hook deployment and address mining mechanics.
