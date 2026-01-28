@@ -70,3 +70,24 @@ contract MyFirstHookTest is Test, Deployers {
         uint256 initialCount = hook.swapCount(key.toId());
 
         // Perform a swap
+        bool zeroForOne = true;
+        int256 amountSpecified = -1e18; // negative means exact input
+        swap(key, zeroForOne, amountSpecified, ZERO_BYTES);
+
+        // Check that swap count increased
+        uint256 finalCount = hook.swapCount(key.toId());
+        assertEq(finalCount, initialCount + 1, "Swap count should increase by 1");
+    }
+
+    function testMultipleSwaps() public {
+        uint256 numSwaps = 5;
+
+        for (uint256 i = 0; i < numSwaps; i++) {
+            bool zeroForOne = i % 2 == 0;
+            int256 amountSpecified = zeroForOne ? int256(-1e17) : int256(1e17);
+            swap(key, zeroForOne, amountSpecified, ZERO_BYTES);
+        }
+
+        assertEq(hook.swapCount(key.toId()), numSwaps, "Should count all swaps");
+    }
+}
