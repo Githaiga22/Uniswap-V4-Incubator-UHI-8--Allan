@@ -93,3 +93,98 @@ function getHookPermissions() public pure override returns (Hooks.Permissions me
 }
 ```
 
+**What this means:**
+- Our hook will be called AFTER swaps and liquidity additions
+- We don't interfere with other operations
+- The hook address must have the correct bits set (more in FAQ.md)
+
+### Awarding Points After Swaps
+
+```solidity
+function _afterSwap(
+    address sender,               // Who made the swap
+    PoolKey calldata key,        // Which pool
+    SwapParams calldata params,  // Swap details
+    BalanceDelta delta,          // Amount changes
+    bytes calldata hookData      // Custom data
+) internal override returns (bytes4, int128) {
+    PoolId poolId = key.toId();
+
+    // Award points
+    userPoints[sender][poolId] += POINTS_PER_SWAP;
+
+    // Track stats
+    totalSwaps[poolId]++;
+
+    // Return selector to confirm success
+    return (BaseHook.afterSwap.selector, 0);
+}
+```
+
+**What happens:**
+1. User swaps in a pool
+2. PoolManager calls our `_afterSwap` function
+3. We award points to the user
+4. We return a selector to confirm execution
+
+### Querying Points
+
+```solidity
+function getPoints(address user, PoolId poolId) external view returns (uint256) {
+    return userPoints[user][poolId];
+}
+```
+
+**Usage:**
+```solidity
+uint256 myPoints = pointsHook.getPoints(myAddress, poolId);
+console.log("I have", myPoints, "points!");
+```
+
+## 🧪 Understanding Tests
+
+Let's break down a test from `PointsHook.t.sol`:
+
+### Test Setup
+
+```solidity
+function setUp() public {
+    // 1. Deploy Uniswap v4 core contracts
+    deployFreshManagerAndRouters();
+
+    // 2. Mine correct hook address
+    uint160 flags = uint160(Hooks.AFTER_SWAP_FLAG | Hooks.AFTER_ADD_LIQUIDITY_FLAG);
+    (address hookAddress, bytes32 salt) = HookMiner.find(...);
+
+    // 3. Deploy hook with mined salt
+    hook = new PointsHook{salt: salt}(IPoolManager(address(manager)));
+
+    // 4. Initialize test pool
+    (key,) = initPool(currency0, currency1, hook, 3000, SQRT_PRICE_1_1);
+
+    // 5. Add liquidity
+    modifyLiquidityRouter.modifyLiquidity(key, LIQUIDITY_PARAMS, ZERO_BYTES);
+}
+```
+
+### A Simple Test
+
+```solidity
+function testSwapAwardsPoints() public {
+    PoolId poolId = key.toId();
+
+    // Act as Alice
+    vm.startPrank(alice);
+
+    // Perform a swap
+    swap(key, true, -1e18, ZERO_BYTES);
+
+    vm.stopPrank();
+
+    // Check points were awarded
+    uint256 points = hook.getPoints(alice, poolId);
+    assertEq(points, hook.POINTS_PER_SWAP());
+}
+```
+
+**What's happening:**
