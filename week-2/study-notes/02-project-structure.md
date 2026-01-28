@@ -418,3 +418,108 @@ touch test/MyNewHook.t.sol
 
 # 3. Update imports to use:
 import {MyNewHook} from "../src/examples/MyNewHook.sol";
+```
+
+---
+
+## 📊 Size Reference
+
+```
+Current Project Size:
+├── Documentation:      ~15 KB (5 files)
+├── Source Code:        ~12 KB (2 hooks)
+├── Tests:              ~8 KB (2 test files + utils)
+├── Scripts:            ~2 KB (1 deployment script)
+└── Dependencies:       ~5 MB (v4-core, v4-periphery, forge-std)
+
+Total: ~5 MB (dependencies are large, your code is small!)
+```
+
+---
+
+## 🎯 Next Steps
+
+1. **Explore the dependencies**
+   ```bash
+   # Browse core types
+   ls lib/v4-core/src/types/
+
+   # Read PoolKey definition
+   cat lib/v4-core/src/types/PoolKey.sol
+   ```
+
+2. **Understand the flow**
+   - Read PoolManager.sol (in lib/v4-core)
+   - See how it calls hooks
+   - Trace a swap from start to finish
+
+3. **Build your hook**
+   - Start from MyFirstHook
+   - Add your custom logic
+   - Test thoroughly
+
+4. **Organize your code**
+   - Extract reusable patterns to src/base/
+   - Define clear interfaces in src/interfaces/
+   - Keep examples clean and educational
+
+---
+
+## 📚 Reference: Key Type Definitions
+
+These are in **lib/v4-core/src/types/**, we import them:
+
+### PoolKey
+```solidity
+struct PoolKey {
+    Currency currency0;      // First token
+    Currency currency1;      // Second token
+    uint24 fee;             // Fee tier
+    int24 tickSpacing;      // Price granularity
+    IHooks hooks;           // Hook contract address
+}
+```
+
+### BalanceDelta
+```solidity
+// Represents change in token balances
+type BalanceDelta is int256;
+// amount0 in upper 128 bits
+// amount1 in lower 128 bits
+```
+
+### SwapParams (in PoolOperation.sol)
+```solidity
+struct SwapParams {
+    bool zeroForOne;         // Swap direction
+    int256 amountSpecified;  // Amount in/out
+    uint160 sqrtPriceLimitX96; // Price limit
+}
+```
+
+---
+
+## 🔍 Where to Find Things
+
+| Looking for...              | File Location                                    |
+|-----------------------------|--------------------------------------------------|
+| Hook examples               | `src/examples/`                                  |
+| Hook base class             | `lib/v4-periphery/src/utils/BaseHook.sol`        |
+| Pool manager                | `lib/v4-core/src/PoolManager.sol`                |
+| Type definitions            | `lib/v4-core/src/types/`                         |
+| Hook interface              | `lib/v4-core/src/interfaces/IHooks.sol`          |
+| Permission flags            | `lib/v4-core/src/libraries/Hooks.sol`            |
+| Test helpers                | `lib/v4-core/test/utils/Deployers.sol`           |
+| Your tests                  | `test/`                                          |
+| Deployment scripts          | `script/`                                        |
+| Documentation               | `*.md` files in root                             |
+
+---
+
+**Remember:**
+- **lib/** = Read but don't modify (dependencies)
+- **src/** = Your creative space (write hooks here)
+- **test/** = Verify your hooks work
+- **docs/** = Learn and reference
+
+Happy coding! 🎣
