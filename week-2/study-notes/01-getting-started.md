@@ -188,3 +188,98 @@ function testSwapAwardsPoints() public {
 ```
 
 **What's happening:**
+1. `vm.startPrank(alice)` - Pretend to be Alice
+2. `swap(...)` - Alice swaps tokens
+3. `vm.stopPrank()` - Stop being Alice
+4. `assertEq(...)` - Verify Alice got points
+
+## 🎯 Exercise: Modify the Hook
+
+Let's make some changes to learn!
+
+### Exercise 1: Change Point Values
+
+**Task:** Double the points for swapping
+
+```solidity
+// In PointsHook.sol, change:
+uint256 public constant POINTS_PER_SWAP = 10;
+
+// To:
+uint256 public constant POINTS_PER_SWAP = 20;
+```
+
+Then test:
+```bash
+forge test --match-test testSwapAwardsPoints -vv
+```
+
+The test should now fail! Why? The test expects 10 points, but we're awarding 20.
+
+**Fix the test:**
+```solidity
+// In PointsHook.t.sol, the assertion already uses:
+assertEq(points, hook.POINTS_PER_SWAP());
+// This automatically uses the new value! No change needed.
+```
+
+### Exercise 2: Add Bonus Points for Large Swaps
+
+**Task:** Award 2x points for swaps larger than 1 token
+
+```solidity
+function _afterSwap(
+    address sender,
+    PoolKey calldata key,
+    SwapParams calldata params,
+    BalanceDelta delta,
+    bytes calldata hookData
+) internal override returns (bytes4, int128) {
+    PoolId poolId = key.toId();
+
+    // Base points
+    uint256 pointsToAward = POINTS_PER_SWAP;
+
+    // Bonus for large swaps!
+    int128 swapAmount = delta.amount0();
+    if (swapAmount < 0) swapAmount = -swapAmount; // Get absolute value
+
+    if (uint256(uint128(swapAmount)) > 1 ether) {
+        pointsToAward *= 2; // Double points!
+    }
+
+    userPoints[sender][poolId] += pointsToAward;
+    totalSwaps[poolId]++;
+
+    return (BaseHook.afterSwap.selector, 0);
+}
+```
+
+**Write a test:**
+```solidity
+function testLargeSwapBonusPoints() public {
+    PoolId poolId = key.toId();
+
+    vm.startPrank(alice);
+
+    // Small swap (1 token)
+    swap(key, true, -1e18, ZERO_BYTES);
+    uint256 pointsSmall = hook.getPoints(alice, poolId);
+
+    // Large swap (5 tokens)
+    swap(key, false, 5e18, ZERO_BYTES);
+    uint256 pointsLarge = hook.getPoints(alice, poolId);
+
+    vm.stopPrank();
+
+    // Large swap should give more points
+    assertEq(pointsLarge - pointsSmall, hook.POINTS_PER_SWAP() * 2);
+}
+```
+
+### Exercise 3: Add a Leaderboard
+
+**Task:** Create a function to get top users by points
+
+```solidity
+// Add to PointsHook.sol
