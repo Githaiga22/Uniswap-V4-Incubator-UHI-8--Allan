@@ -774,3 +774,198 @@ function _afterSwap(
 │     → "Successfully executed, no fee changes"      │
 └────────────────────────────────────────────────────┘
 ```
+
+### The _afterAddLiquidity Function
+
+```solidity
+function _afterAddLiquidity(
+    address sender,
+    PoolKey calldata key,
+    ModifyLiquidityParams calldata params,
+    BalanceDelta delta,
+    BalanceDelta feesAccrued,
+    bytes calldata hookData
+) internal override returns (bytes4, BalanceDelta) {
+    PoolId poolId = key.toId();
+    userPoints[sender][poolId] += POINTS_PER_LIQUIDITY;
+    totalLiquidityOps[poolId]++;
+    return (BaseHook.afterAddLiquidity.selector, BalanceDelta.wrap(0));
+}
+```
+
+**What's Different?**
+
+```
+┌──────────────────────────────────────────────────────┐
+│  _afterSwap vs _afterAddLiquidity                    │
+├──────────────────────────────────────────────────────┤
+│                                                      │
+│  Parameters:                                         │
+│  afterSwap:                                          │
+│  • SwapParams (amount, direction)                    │
+│  • BalanceDelta (token changes)                      │
+│                                                      │
+│  afterAddLiquidity:                                  │
+│  • ModifyLiquidityParams (tick range, amount)        │
+│  • BalanceDelta (tokens deposited)                   │
+│  • BalanceDelta feesAccrued (fees earned)            │
+│                                                      │
+│  Returns:                                            │
+│  afterSwap:                                          │
+│  • (bytes4, int128) - selector + fee adjustment      │
+│                                                      │
+│  afterAddLiquidity:                                  │
+│  • (bytes4, BalanceDelta) - selector + delta         │
+│                                                      │
+│  Points Awarded:                                     │
+│  • Swap: 10 points                                   │
+│  • Add Liquidity: 50 points (5x more!)               │
+│                                                      │
+│  Why more for liquidity?                             │
+│  → Liquidity providers help the pool function        │
+│  → They take on risk (impermanent loss)              │
+│  → Their capital is locked up                        │
+│  → We want to incentivize them more!                 │
+└──────────────────────────────────────────────────────┘
+```
+
+### View Functions
+
+```solidity
+function getPoints(address user, PoolId poolId) external view returns (uint256) {
+    return userPoints[user][poolId];
+}
+```
+
+```
+┌──────────────────────────────────────────────────────┐
+│  View Function = Read-Only Query                     │
+│                                                      │
+│  Properties:                                         │
+│  • external: Can be called from outside the contract │
+│  • view: Doesn't modify state (read-only)            │
+│  • returns: Gives back a value                       │
+│                                                      │
+│  Like querying a database:                           │
+│  SELECT points FROM userPoints                       │
+│  WHERE user = 'Alice' AND poolId = '0xABC';          │
+│                                                      │
+│  Usage from frontend:                                │
+│  const points = await pointsHook.getPoints(          │
+│    aliceAddress,                                     │
+│    poolId                                            │
+│  );                                                  │
+│  console.log(`Alice has ${points} points`);          │
+└──────────────────────────────────────────────────────┘
+```
+
+---
+
+## Key Differences
+
+### Comparison Table
+
+```
+┌───────────────────────────────────────────────────────────────┐
+│  Feature              MyFirstHook         PointsHook          │
+├───────────────────────────────────────────────────────────────┤
+│  Complexity           Simple              Advanced            │
+│  State Variables      1 mapping           3 mappings          │
+│  Hook Functions       2 (before/afterSwap)3 (swap + liquidity)│
+│  View Functions       0                   3                   │
+│  User Tracking        No                  Yes                 │
+│  Constants            No                  Yes                 │
+│  Documentation        Basic               Extensive           │
+│  Production Ready     No                  Getting there       │
+└───────────────────────────────────────────────────────────────┘
+```
+
+### Evolution Path
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  Learning Progression                                   │
+│                                                         │
+│  Step 1: MyFirstHook                                    │
+│  • Learn basic hook structure                           │
+│  • Understand permissions                               │
+│  • See simple state tracking                            │
+│  • Master return values                                 │
+│                                                         │
+│  Step 2: PointsHook                                     │
+│  • Per-user tracking                                    │
+│  • Multiple hook types                                  │
+│  • View functions for queries                           │
+│  • Constants and organization                           │
+│                                                         │
+│  Step 3: Your Custom Hook                               │
+│  • Combine patterns                                     │
+│  • Add business logic                                   │
+│  • Implement access control                             │
+│  • Deploy to production                                 │
+└─────────────────────────────────────────────────────────┘
+```
+
+### When to Use Each Pattern
+
+```
+┌──────────────────────────────────────────────────────────┐
+│  Use MyFirstHook-style when:                             │
+│  ✓ Learning hooks                                        │
+│  ✓ Building a prototype                                  │
+│  ✓ Only need pool-level stats                            │
+│  ✓ Don't care about individual users                     │
+│                                                          │
+│  Examples:                                               │
+│  • Volume tracker (just count swaps)                     │
+│  • Pool activity monitor                                 │
+│  • Simple on-chain analytics                             │
+└──────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────┐
+│  Use PointsHook-style when:                              │
+│  ✓ Need user-specific data                               │
+│  ✓ Building an incentive system                          │
+│  ✓ Want queryable data                                   │
+│  ✓ Planning for frontend integration                     │
+│                                                          │
+│  Examples:                                               │
+│  • Loyalty programs                                      │
+│  • Trading competitions                                  │
+│  • Liquidity mining                                      │
+│  • User dashboards                                       │
+└──────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Summary
+
+```
+┌────────────────────────────────────────────────────────────┐
+│  🎓 What You've Learned                                    │
+│                                                            │
+│  ✓ How hooks plug into Uniswap v4                          │
+│  ✓ What each line of code does                             │
+│  ✓ Why permissions matter                                  │
+│  ✓ How state variables store data                          │
+│  ✓ When hook functions execute                             │
+│  ✓ How to track users vs pools                             │
+│  ✓ The difference between simple and advanced patterns     │
+│                                                            │
+│  🚀 Next Steps                                             │
+│                                                            │
+│  1. Run the tests: forge test -vv                          │
+│  2. Modify point values                                    │
+│  3. Add your own state variables                           │
+│  4. Create a custom hook                                   │
+│  5. Deploy to testnet                                      │
+│                                                            │
+│  Remember: Every expert was once a beginner!               │
+│  Break things, fix them, learn from mistakes.              │
+└────────────────────────────────────────────────────────────┘
+```
+
+---
+
+*Take your time with this material. Refer back to these diagrams as you experiment with the code. Understanding takes practice!*
