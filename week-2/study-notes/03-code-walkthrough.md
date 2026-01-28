@@ -386,3 +386,197 @@ function getHookPermissions() public pure override returns (Hooks.Permissions me
         beforeSwapReturnDelta: false,
         afterSwapReturnDelta: false,
         afterAddLiquidityReturnDelta: false,
+        afterRemoveLiquidityReturnDelta: false
+    });
+}
+```
+
+```
+┌────────────────────────────────────────────────────────┐
+│  Permission Checklist                                  │
+│                                                        │
+│  Think of this as a job application:                   │
+│  "Which services can your hook provide?"               │
+│                                                        │
+│  □ beforeInitialize      - Setup new pools            │
+│  □ afterInitialize       - React to new pools         │
+│  □ beforeAddLiquidity    - Check liquidity additions  │
+│  □ afterAddLiquidity     - React to liquidity adds    │
+│  □ beforeRemoveLiquidity - Check liquidity removals   │
+│  □ afterRemoveLiquidity  - React to liquidity removals│
+│  ✓ beforeSwap            - Run before swaps           │
+│  ✓ afterSwap             - Run after swaps            │
+│  □ beforeDonate          - Check donations            │
+│  □ afterDonate           - React to donations         │
+│  □ Other advanced options...                          │
+│                                                        │
+│  We only checked 2 boxes: beforeSwap & afterSwap      │
+│  → Our hook only cares about swaps!                   │
+└────────────────────────────────────────────────────────┘
+```
+
+**Why does this matter?**
+
+```
+┌──────────────────────────────────────────────────────────┐
+│  Permission → Address Bits                               │
+│                                                          │
+│  Your contract's address MUST have specific bits set     │
+│  based on these permissions!                             │
+│                                                          │
+│  Example:                                                │
+│  beforeSwap: true  → Bit 6 must be 1                     │
+│  afterSwap: true   → Bit 7 must be 1                     │
+│                                                          │
+│  Valid address:   0x...0C0 (bits 6 & 7 = 1)             │
+│  Invalid address: 0x...000 (bits 6 & 7 = 0)             │
+│                                                          │
+│  This is enforced by CREATE2 deployment with HookMiner   │
+│                                                          │
+│  Why? Security!                                          │
+│  → Prevents hooks from being called for functions        │
+│    they don't implement                                  │
+│  → Address itself proves which functions are available   │
+│  → Can't lie about capabilities                          │
+└──────────────────────────────────────────────────────────┘
+```
+
+---
+
+### The Hook Functions
+
+#### beforeSwap
+
+```solidity
+function _beforeSwap(
+    address,
+    PoolKey calldata,
+    SwapParams calldata,
+    bytes calldata
+) internal override returns (bytes4, BeforeSwapDelta, uint24) {
+    // Logic before swap
+    return (BaseHook.beforeSwap.selector, BeforeSwapDeltaLibrary.ZERO_DELTA, 0);
+}
+```
+
+```
+┌──────────────────────────────────────────────────────────┐
+│  Parameter Breakdown                                     │
+│                                                          │
+│  address              → Who is swapping?                 │
+│  PoolKey calldata     → Which pool?                      │
+│  SwapParams calldata  → Swap details (amount, direction) │
+│  bytes calldata       → Custom data (hookData)           │
+│                                                          │
+│  Why unnamed (no variable names)?                        │
+│  → We're not using them in this simple example          │
+│  → Saves gas (doesn't copy to memory)                   │
+│  → Still type-checked at compile time                    │
+│                                                          │
+│  "calldata" = Read-only parameter                        │
+│  → Can't be modified                                     │
+│  → Cheapest to use                                       │
+│  → Like looking at a menu vs buying it                   │
+└──────────────────────────────────────────────────────────┘
+```
+
+**Return Values:**
+
+```
+┌──────────────────────────────────────────────────────────┐
+│  What We Return                                          │
+│                                                          │
+│  1. bytes4 selector                                      │
+│     = BaseHook.beforeSwap.selector                       │
+│     Purpose: "Yes, I successfully executed!"             │
+│     Like: Signing a receipt                              │
+│                                                          │
+│  2. BeforeSwapDelta                                      │
+│     = BeforeSwapDeltaLibrary.ZERO_DELTA                  │
+│     Purpose: "I didn't modify the swap amounts"          │
+│     Like: "No changes to the order"                      │
+│                                                          │
+│  3. uint24 (fee override)                                │
+│     = 0                                                  │
+│     Purpose: "Use the pool's default fee"                │
+│     Like: "No special discount"                          │
+└──────────────────────────────────────────────────────────┘
+```
+
+**When does this run?**
+
+```
+USER SWAPS:
+┌─────────────────────────────────────────┐
+│ 1. User calls router.swap()             │
+└──────────┬──────────────────────────────┘
+           │
+           ▼
+┌─────────────────────────────────────────┐
+│ 2. Router calls poolManager.swap()      │
+└──────────┬──────────────────────────────┘
+           │
+           ▼
+┌─────────────────────────────────────────┐
+│ 3. PoolManager checks: "Does this pool  │
+│    have a hook with beforeSwap?"        │
+│    → YES! Call it!                      │
+└──────────┬──────────────────────────────┘
+           │
+           ▼
+┌─────────────────────────────────────────┐
+│ 4. **YOUR CODE RUNS HERE** ←←←          │
+│    _beforeSwap() executes               │
+└──────────┬──────────────────────────────┘
+           │
+           ▼
+┌─────────────────────────────────────────┐
+│ 5. PoolManager executes the actual swap │
+└──────────┬──────────────────────────────┘
+           │
+           ▼
+┌─────────────────────────────────────────┐
+│ 6. PoolManager calls _afterSwap()       │
+│    (if hook has afterSwap permission)   │
+└─────────────────────────────────────────┘
+```
+
+#### afterSwap
+
+```solidity
+function _afterSwap(
+    address,
+    PoolKey calldata key,
+    SwapParams calldata,
+    BalanceDelta,
+    bytes calldata
+) internal override returns (bytes4, int128) {
+    // Increment swap count for this pool
+    swapCount[key.toId()]++;
+
+    return (BaseHook.afterSwap.selector, 0);
+}
+```
+
+**Line-by-Line:**
+
+```
+Line: swapCount[key.toId()]++;
+
+Step 1: key.toId()
+        → Convert PoolKey to PoolId (hash it)
+        Example: PoolKey{TokenA, TokenB, fee, ...}
+                 → 0xabcd1234...
+
+Step 2: swapCount[0xabcd1234...]
+        → Look up current count for this pool
+        Example: Currently 5
+
+Step 3: swapCount[0xabcd1234...]++
+        → Increment by 1
+        Example: 5 → 6
+
+Visual:
+┌─────────────────────────────────────┐
+│  Before swap:                       │
+│  swapCount[poolId] = 5              │
