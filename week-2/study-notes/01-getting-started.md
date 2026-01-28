@@ -378,3 +378,102 @@ Error: Hook address mismatch
 
 **Solution:** The HookMiner didn't find a valid salt. This is rare but can happen.
 - Increase MAX_LOOP in HookMiner.sol
+- Or use a different deployer address
+
+### "Compiler run failed"
+```
+Error: Compiler run failed
+```
+
+**Solution:** Check your imports and remappings
+```bash
+# Verify remappings
+forge remappings
+
+# Clean and rebuild
+forge clean
+forge build
+```
+
+### "HookNotImplemented"
+```
+Error: HookNotImplemented()
+```
+
+**Solution:** You enabled a hook in `getHookPermissions()` but didn't implement it.
+- Either set that permission to `false`
+- Or implement the `_hookName()` function
+
+### Test Fails with "assertion failed"
+```
+[FAIL] testSwapAwardsPoints()
+```
+
+**Solution:** Add -vvvv to see details
+```bash
+forge test --match-test testSwapAwardsPoints -vvvv
+```
+
+This shows exactly where and why the assertion failed.
+
+## 📚 Next Steps
+
+Now that you understand the basics:
+
+1. **Read FAQ.md** - Answers to common questions with visual aids
+
+2. **Experiment** - Modify PointsHook.sol:
+   - Change point values
+   - Add decay over time
+   - Implement point transfers between users
+   - Create point-based discounts
+
+3. **Create Your Own Hook** - Ideas:
+   - Trading volume tracker
+   - Whitelist hook (only certain addresses can swap)
+   - Fee discount hook
+   - Referral system hook
+   - Time-locked liquidity hook
+
+4. **Deploy to Testnet**:
+   ```bash
+   # Set up .env file
+   echo "PRIVATE_KEY=your_key" > .env
+   echo "POOL_MANAGER_ADDRESS=0x..." >> .env
+
+   # Deploy
+   forge script script/DeployHook.s.sol --rpc-url sepolia --broadcast
+   ```
+
+## 🤝 Getting Help
+
+Stuck? Here are resources:
+
+- **FAQ.md** - Common questions answered
+- **Foundry Book** - https://book.getfoundry.sh/
+- **Uniswap v4 Docs** - https://docs.uniswap.org/contracts/v4/overview
+- **Ask in comments** - Add your questions and we'll answer them!
+
+## 🎓 Learning Resources
+
+### Beginner
+- Read through PointsHook.sol with comments
+- Run tests and see output with -vv flag
+- Modify point values and re-test
+
+### Intermediate
+- Implement Exercise 2 (bonus points)
+- Implement Exercise 3 (leaderboard)
+- Write your own test cases
+
+### Advanced
+- Create a custom hook from scratch
+- Implement beforeSwap with access control
+- Build a complex incentive mechanism
+- Deploy to testnet and test with real transactions
+
+---
+
+**Happy Hooking! 🎣**
+
+*Remember: The best way to learn is by doing. Don't be afraid to break things - that's what tests are for!*
