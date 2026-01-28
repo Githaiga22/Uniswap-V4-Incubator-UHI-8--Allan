@@ -294,3 +294,77 @@ Given this knowledge, interesting hook ideas:
    - Build viral growth mechanic
 
 3. **LP Insurance Hook**
+   - Collect small fee on swaps
+   - Pay out to LPs on impermanent loss events
+   - Conditional logic in beforeSwap
+
+4. **Governance-Controlled Fees**
+   - Token holders vote on fee parameters
+   - Update fees via afterSwap based on DAO decision
+   - On-chain governance integration
+
+5. **Oracle-Backed Limits**
+   - Check Chainlink price before large swaps
+   - Revert if deviation too high
+   - MEV protection for users
+
+---
+
+## Open Research Questions
+
+1. **Cross-pool composability**: Can one hook manage multiple pools efficiently? What are the storage tradeoffs?
+
+2. **Upgradeability**: Hooks are immutable. How do you version them? Proxy patterns? New deployment + migration?
+
+3. **Gas optimization**: What's the gas ceiling before hooks become economically unfeasible? Need benchmarking.
+
+4. **Security boundaries**: What can malicious hooks do? Can they DOS pools? Steal funds? Need threat model.
+
+5. **Frontend integration**: Best practices for hookData encoding? Standard formats? Discoverability?
+
+---
+
+## Resources for Deep Dive
+
+**Must-read code**:
+- `v4-core/src/PoolManager.sol` - The orchestrator
+- `v4-core/src/libraries/Hooks.sol` - Permission logic
+- `v4-periphery/src/utils/BaseHook.sol` - Your parent class
+
+**Helpful docs**:
+- Uniswap V4 whitepaper (technical spec)
+- EIP-1153 (transient storage)
+- EIP-6909 (multi-token standard)
+
+**Testing tools**:
+- Foundry documentation
+- v4-core test examples
+- HookMiner.sol (address mining)
+
+---
+
+## Week 2 Assessment
+
+**What went well**:
+- Understood hook lifecycle completely
+- Built two working examples
+- Grasped permission system
+- Identified production patterns
+
+**What needs work**:
+- Test setup (currency initialization)
+- Gas profiling and optimization
+- Security analysis
+- Production deployment process
+
+**Confidence level**: 7/10
+Can build basic hooks. Need more practice with complex state management and edge cases.
+
+---
+
+**Next week**: Deploy to testnet and build a custom hook from scratch.
+
+---
+
+**Allan Robinson**
+January 27, 2026
