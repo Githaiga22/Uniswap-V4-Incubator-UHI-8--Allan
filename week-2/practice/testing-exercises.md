@@ -398,3 +398,104 @@ contract DeployPointsHook is Script {
 
         vm.stopBroadcast();
     }
+}
+```
+
+**Verification test**:
+```solidity
+function testDeployment() public {
+    // Verify hook address has correct flags
+    uint160 addr = uint160(address(hook));
+    uint160 flags = addr & uint160(0x3FFF);
+
+    assertTrue(flags & Hooks.AFTER_SWAP_FLAG != 0);
+    assertTrue(flags & Hooks.AFTER_ADD_LIQUIDITY_FLAG != 0);
+}
+```
+</details>
+
+---
+
+## Exercise 8: Integration Testing
+
+### Task
+Test complete user flow: swap → earn points → query points.
+
+**Requirements**:
+1. Multiple users perform actions
+2. Verify points tracked correctly
+3. Test edge cases (same pool, different pools)
+
+<details>
+<summary>Solution</summary>
+
+```solidity
+function testIntegration_CompleteFlow() public {
+    address[] memory users = new address[](3);
+    users[0] = makeAddr("alice");
+    users[1] = makeAddr("bob");
+    users[2] = makeAddr("charlie");
+
+    vm.deal(users[0], 10 ether);
+    vm.deal(users[1], 10 ether);
+    vm.deal(users[2], 10 ether);
+
+    // Alice swaps twice
+    vm.startPrank(users[0]);
+    swap(poolKey, 1 ether);
+    swap(poolKey, 1 ether);
+    vm.stopPrank();
+
+    // Bob swaps once
+    vm.prank(users[1]);
+    swap(poolKey, 1 ether);
+
+    // Charlie adds liquidity
+    vm.prank(users[2]);
+    modifyLiquidity(poolKey, 1000, 2000, 1 ether);
+
+    // Verify points
+    assertEq(hook.getPoints(users[0], poolId), POINTS_PER_SWAP * 2);
+    assertEq(hook.getPoints(users[1], poolId), POINTS_PER_SWAP);
+    assertEq(hook.getPoints(users[2], poolId), POINTS_PER_LIQUIDITY);
+
+    // Verify totals
+    assertEq(hook.totalSwaps(poolId), 3);
+    assertEq(hook.totalLiquidityOps(poolId), 1);
+}
+```
+</details>
+
+---
+
+## Challenge: Build Complete Test Suite
+
+### Task
+Create production-ready test suite for PointsHook.
+
+**Requirements**:
+- [ ] Unit tests (all functions)
+- [ ] Integration tests (user flows)
+- [ ] Fuzz tests (random inputs)
+- [ ] Gas benchmarks (all operations)
+- [ ] Event tests (all emissions)
+- [ ] Coverage >90%
+- [ ] Fork tests (mainnet integration)
+- [ ] Deployment tests (local + testnet)
+
+**Bonus**:
+- [ ] Snapshot tests (gas regression)
+- [ ] Invariant tests (properties always hold)
+- [ ] Stress tests (high load)
+- [ ] Security tests (attack vectors)
+
+---
+
+**Estimated time**: 4-6 hours
+
+**Success criteria**: `forge test` passes with >90% coverage and all gas benchmarks under target.
+
+---
+
+**Allan Robinson**
+Testing Exercises - Week 2 - January 29, 2026
