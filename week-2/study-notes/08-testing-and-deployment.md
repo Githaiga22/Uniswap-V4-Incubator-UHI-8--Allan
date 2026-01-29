@@ -246,3 +246,127 @@ contract PointsHookTest is Test {
 ### Key Test Cases for PointsHook
 
 **1. Basic Functionality**:
+```solidity
+function testSwapAwardsPoints() public {
+    vm.prank(alice);
+    swap(poolKey, 1 ether);
+
+    uint256 points = hook.getPoints(alice, poolId);
+    assertEq(points, POINTS_PER_SWAP);
+}
+```
+
+**2. Accumulation**:
+```solidity
+function testMultipleSwapsAccumulate() public {
+    vm.startPrank(alice);
+    swap(poolKey, 1 ether);
+    swap(poolKey, 1 ether);
+    swap(poolKey, 1 ether);
+    vm.stopPrank();
+
+    uint256 points = hook.getPoints(alice, poolId);
+    assertEq(points, POINTS_PER_SWAP * 3);
+}
+```
+
+**3. Isolation**:
+```solidity
+function testPointsIsolatedByPool() public {
+    vm.prank(alice);
+    swap(pool1Key, 1 ether);
+
+    assertEq(hook.getPoints(alice, pool1Id), POINTS_PER_SWAP);
+    assertEq(hook.getPoints(alice, pool2Id), 0);
+}
+```
+
+**4. Gas Benchmarking**:
+```solidity
+function testGas_SwapWithHook() public {
+    uint256 gasBefore = gasleft();
+    vm.prank(alice);
+    swap(poolKey, 1 ether);
+    uint256 gasUsed = gasBefore - gasleft();
+
+    console.log("Gas overhead:", gasUsed);
+    assertLt(gasUsed, 50000); // Ensure hook adds <50k gas
+}
+```
+
+---
+
+## Deployment Process
+
+### Step 1: Mine Hook Address
+
+**Using HookMiner**:
+```bash
+forge test --match-test testFindSalt -vv
+```
+
+**What it does**:
+```solidity
+function testFindSalt() public {
+    uint160 flags = uint160(
+        Hooks.AFTER_SWAP_FLAG | Hooks.AFTER_ADD_LIQUIDITY_FLAG
+    );
+
+    (address hookAddress, bytes32 salt) =
+        HookMiner.find(address(this), flags, type(PointsHook).creationCode,
+                       abi.encode(poolManager));
+
+    console.log("Hook address:", hookAddress);
+    console.log("Salt:", uint256(salt));
+}
+```
+
+**Tom's tip**: Save the salt! You'll need it for actual deployment.
+
+### Step 2: Deploy Script
+
+**script/DeployPointsHook.s.sol**:
+```solidity
+contract DeployPointsHook is Script {
+    function run() external {
+        address poolManager = vm.envAddress("POOL_MANAGER");
+        bytes32 salt = bytes32(vm.envUint("HOOK_SALT"));
+
+        vm.startBroadcast();
+
+        PointsHook hook = new PointsHook{salt: salt}(
+            IPoolManager(poolManager)
+        );
+
+        console.log("Hook deployed at:", address(hook));
+
+        vm.stopBroadcast();
+    }
+}
+```
+
+**Environment variables**:
+```bash
+export POOL_MANAGER=0x... # Mainnet: 0x000000000004444c...
+export HOOK_SALT=0x...
+export PRIVATE_KEY=0x...
+```
+
+### Step 3: Execute Deployment
+
+**Dry run**:
+```bash
+forge script script/DeployPointsHook.s.sol --rpc-url sepolia
+```
+
+**Actual deployment**:
+```bash
+forge script script/DeployPointsHook.s.sol \
+    --rpc-url sepolia \
+    --broadcast \
+    --verify
+```
+
+**Tom's checklist**:
+- [ ] Mined correct salt
+- [ ] Hook address matches expected
