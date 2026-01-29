@@ -98,3 +98,103 @@ forge build --optimizer-runs 1000000
 
 ### Size Optimization
 
+```bash
+# Check contract sizes
+forge build --sizes
+
+# Optimize for size
+forge build --optimizer-runs 1 --via-ir
+```
+
+**Size limits**:
+- Mainnet: 24KB per contract
+- If exceeding: Split contracts or optimize further
+
+---
+
+## Deployment Commands
+
+### Local Deployment (Anvil)
+
+```bash
+# Start local node
+anvil
+
+# Deploy to local node
+forge script script/Deploy.s.sol --rpc-url http://localhost:8545 --broadcast
+```
+
+### Testnet Deployment
+
+```bash
+# Sepolia
+forge script script/Deploy.s.sol \
+    --rpc-url $SEPOLIA_RPC \
+    --broadcast \
+    --verify
+
+# With specific gas price
+forge script script/Deploy.s.sol \
+    --rpc-url $SEPOLIA_RPC \
+    --gas-price 20gwei \
+    --broadcast
+```
+
+### Verification
+
+```bash
+# Verify on Etherscan
+forge verify-contract <address> PointsHook \
+    --chain sepolia \
+    --etherscan-api-key $ETHERSCAN_KEY
+
+# Verify with constructor args
+forge verify-contract <address> PointsHook \
+    --chain sepolia \
+    --constructor-args $(cast abi-encode "constructor(address)" $POOL_MANAGER)
+```
+
+---
+
+## Debugging Commands
+
+### Trace Specific Transaction
+
+```bash
+# Trace a test
+forge test --match-test testSwap -vvvvv
+
+# Trace and show gas
+forge test --match-test testSwap -vvvvv --gas-report
+```
+
+### Interactive Debugging
+
+```bash
+# Debug specific test
+forge test --match-test testSwap --debug
+
+# Opens TUI debugger:
+# - Step through execution
+# - View stack
+# - Check storage
+# - Inspect memory
+```
+
+**Keys in debugger**:
+- `n`: Next step
+- `s`: Step into function
+- `o`: Step out of function
+- `q`: Quit
+- `h`: Help
+
+---
+
+## Utility Commands
+
+### Cast (CLI Tool)
+
+```bash
+# Convert hex to decimal
+cast --to-dec 0x64
+
