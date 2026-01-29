@@ -5,7 +5,7 @@ pragma solidity ^0.8.24;
  * @title PointsHook
  * @author Allan Robinson
  * @notice Loyalty rewards hook that awards points for swaps and liquidity provision
- * @dev Created: January 27, 2026
+ * @dev Created: January 27, 2026 | Updated: January 29, 2026 (Testing & Deployment session)
  */
 
 import {BaseHook} from "@uniswap/v4-periphery/src/utils/BaseHook.sol";
@@ -26,6 +26,10 @@ contract PointsHook is BaseHook {
 
     uint256 public constant POINTS_PER_SWAP = 10;
     uint256 public constant POINTS_PER_LIQUIDITY = 50;
+
+    event PointsAwarded(address indexed user, PoolId indexed poolId, uint256 points);
+    event SwapExecuted(address indexed user, PoolId indexed poolId);
+    event LiquidityAdded(address indexed user, PoolId indexed poolId);
 
     constructor(IPoolManager _poolManager) BaseHook(_poolManager) {}
 
@@ -48,6 +52,11 @@ contract PointsHook is BaseHook {
         });
     }
 
+    function _assignPoints(address user, PoolId poolId, uint256 points) internal {
+        userPoints[user][poolId] += points;
+        emit PointsAwarded(user, poolId, points);
+    }
+
     function _afterSwap(
         address sender,
         PoolKey calldata key,
@@ -56,8 +65,11 @@ contract PointsHook is BaseHook {
         bytes calldata hookData
     ) internal override returns (bytes4, int128) {
         PoolId poolId = key.toId();
-        userPoints[sender][poolId] += POINTS_PER_SWAP;
+
+        _assignPoints(sender, poolId, POINTS_PER_SWAP);
         totalSwaps[poolId]++;
+
+        emit SwapExecuted(sender, poolId);
 
         return (BaseHook.afterSwap.selector, 0);
     }
@@ -71,8 +83,11 @@ contract PointsHook is BaseHook {
         bytes calldata hookData
     ) internal override returns (bytes4, BalanceDelta) {
         PoolId poolId = key.toId();
-        userPoints[sender][poolId] += POINTS_PER_LIQUIDITY;
+
+        _assignPoints(sender, poolId, POINTS_PER_LIQUIDITY);
         totalLiquidityOps[poolId]++;
+
+        emit LiquidityAdded(sender, poolId);
 
         return (BaseHook.afterAddLiquidity.selector, BalanceDelta.wrap(0));
     }
