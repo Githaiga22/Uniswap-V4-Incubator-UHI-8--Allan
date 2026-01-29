@@ -198,3 +198,103 @@ forge test --match-test testSwap --debug
 # Convert hex to decimal
 cast --to-dec 0x64
 
+# Convert decimal to hex
+cast --to-hex 100
+
+# ABI encode
+cast abi-encode "transfer(address,uint256)" 0x... 100
+
+# Calculate function selector
+cast sig "afterSwap(address,(...),bytes)"
+
+# Get storage at slot
+cast storage <contract> <slot> --rpc-url $RPC
+
+# Call view function
+cast call <contract> "getPoints(address,bytes32)" $USER $POOL_ID --rpc-url $RPC
+```
+
+### Snapshot (Gas Comparison)
+
+```bash
+# Create baseline
+forge snapshot
+
+# Compare after changes
+forge snapshot --diff
+
+# Save to file
+forge snapshot --snap baseline.snap
+```
+
+**Usage pattern**:
+1. Make code change
+2. Run `forge snapshot --diff`
+3. Check if gas increased/decreased
+4. Keep if improved, revert if worse
+
+---
+
+## Configuration Commands
+
+### View Current Config
+
+```bash
+# Show remappings
+forge remappings
+
+# Show config
+forge config
+
+# List installed libraries
+forge tree
+```
+
+### Install Dependencies
+
+```bash
+# Install from GitHub
+forge install openzeppelin/openzeppelin-contracts
+
+# Install specific version
+forge install openzeppelin/openzeppelin-contracts@v4.9.0
+
+# Update dependencies
+forge update
+
+# Remove dependency
+forge remove openzeppelin-contracts
+```
+
+---
+
+## Fuzz Testing
+
+### Basic Fuzzing
+
+```bash
+# Run fuzz tests (default: 256 runs)
+forge test --match-test testFuzz
+
+# More thorough (10,000 runs)
+forge test --match-test testFuzz --fuzz-runs 10000
+
+# Deeper (100,000 runs - slow!)
+forge test --match-test testFuzz --fuzz-runs 100000
+```
+
+**Example fuzz test**:
+```solidity
+function testFuzz_PointsAlwaysPositive(uint8 swapCount) public {
+    for (uint256 i = 0; i < swapCount; i++) {
+        swap(...);
+    }
+    uint256 points = hook.getPoints(alice, poolId);
+    assertGe(points, 0);
+}
+```
+
+---
+
+## Fork Testing
+
