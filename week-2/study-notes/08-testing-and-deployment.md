@@ -122,3 +122,127 @@ vm.deal(address(this), 100 ether);  // Give contract 100 ETH
 vm.deal(alice, 10 ether);           // Give alice 10 ETH
 ```
 
+**Why this works**: Foundry's VM can manipulate state freely in tests. This sets the balance directly without needing transfers.
+
+**vm.rollFork()** - Time travel in forked tests:
+```solidity
+vm.rollFork(blockNumber);           // Jump to specific block
+vm.rollFork(block.number + 100);    // Fast forward 100 blocks
+```
+
+**Use case**: Test how hook behaves over time, simulate market conditions.
+
+**gasleft()** - Measure gas consumption:
+```solidity
+uint256 gasBefore = gasleft();
+// Function call
+uint256 gasUsed = gasBefore - gasleft();
+console.log("Gas used:", gasUsed);
+```
+
+**Tom's insight**: Use this to compare implementations and ensure optimizations actually reduce gas.
+
+### Coverage Analysis
+
+**Command**:
+```bash
+forge coverage --report summary
+```
+
+**Output**:
+```
+| File               | % Lines | % Statements | % Branches | % Funcs |
+|--------------------|---------|--------------|------------|---------|
+| PointsHook.sol     | 100.00% | 100.00%      | 75.00%     | 100.00% |
+```
+
+**Tom's guideline**: Aim for >90% coverage on core logic. 100% isn't always necessary (some edge cases are impractical to test).
+
+---
+
+## Code Pattern: _assignPoints
+
+Tom introduced a cleaner pattern for point assignment:
+
+**Before** (repetitive):
+```solidity
+function _afterSwap(...) internal override {
+    PoolId poolId = key.toId();
+    userPoints[sender][poolId] += POINTS_PER_SWAP;
+    totalSwaps[poolId]++;
+    return (BaseHook.afterSwap.selector, 0);
+}
+
+function _afterAddLiquidity(...) internal override {
+    PoolId poolId = key.toId();
+    userPoints[sender][poolId] += POINTS_PER_LIQUIDITY;
+    totalLiquidityOps[poolId]++;
+    return (BaseHook.afterAddLiquidity.selector, BalanceDelta.wrap(0));
+}
+```
+
+**After** (DRY principle):
+```solidity
+function _assignPoints(address user, PoolId poolId, uint256 points) internal {
+    userPoints[user][poolId] += points;
+    emit PointsAwarded(user, poolId, points);
+}
+
+function _afterSwap(...) internal override {
+    _assignPoints(sender, key.toId(), POINTS_PER_SWAP);
+    totalSwaps[key.toId()]++;
+    return (BaseHook.afterSwap.selector, 0);
+}
+
+function _afterAddLiquidity(...) internal override {
+    _assignPoints(sender, key.toId(), POINTS_PER_LIQUIDITY);
+    totalLiquidityOps[key.toId()]++;
+    return (BaseHook.afterAddLiquidity.selector, BalanceDelta.wrap(0));
+}
+```
+
+**Benefits**:
+- Centralized logic (easier to modify)
+- Consistent event emissions
+- Better testability (can test _assignPoints in isolation)
+- Gas efficiency (function inlining)
+
+---
+
+## Testing Strategy
+
+### Test Structure
+
+Tom showed us the standard pattern:
+
+```solidity
+contract PointsHookTest is Test {
+    // 1. State variables
+    PointsHook hook;
+    PoolManager poolManager;
+    address alice = makeAddr("alice");
+
+    // 2. Setup
+    function setUp() public {
+        // Deploy dependencies
+        // Initialize hook
+        // Create test pools
+    }
+
+    // 3. Unit tests (test one thing)
+    function testSwapAwardsPoints() public { ... }
+
+    // 4. Integration tests (test workflows)
+    function testMultipleSwapsAccumulatePoints() public { ... }
+
+    // 5. Edge cases
+    function testZeroPointsWhenNoActivity() public { ... }
+
+    // 6. Fuzz tests (random inputs)
+    function testFuzz_PointsAlwaysPositive(uint256 swaps) public { ... }
+}
+```
+
+### Key Test Cases for PointsHook
+
+**1. Basic Functionality**:
