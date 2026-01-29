@@ -398,3 +398,104 @@ forge test --match-test testNewFeature -vv
 forge snapshot --diff
 
 # Debug failures
+forge test --match-test testFailingCase -vvvv
+```
+
+### Before Commit
+
+```bash
+# Run full test suite
+forge test
+
+# Check gas report
+forge test --gas-report
+
+# Verify coverage
+forge coverage
+
+# Create gas baseline
+forge snapshot
+```
+
+### Before Deployment
+
+```bash
+# Build optimized
+forge build --optimizer-runs 1000000
+
+# Test on fork
+forge test --fork-url $MAINNET_RPC
+
+# Dry run deployment
+forge script script/Deploy.s.sol --rpc-url $TESTNET
+
+# Actual deployment
+forge script script/Deploy.s.sol --rpc-url $TESTNET --broadcast --verify
+```
+
+---
+
+## Common Issues & Solutions
+
+### Issue: "Out of gas"
+```bash
+# Increase gas limit
+forge test --gas-limit 50000000
+```
+
+### Issue: "Stack too deep"
+```bash
+# Use via-ir compiler
+forge build --via-ir
+```
+
+### Issue: "Revert reasons not shown"
+```bash
+# Use higher verbosity
+forge test -vvvv
+```
+
+### Issue: "Coverage incomplete"
+```bash
+# Run with more detail
+forge coverage --report debug
+```
+
+---
+
+## Cheat Sheet
+
+```bash
+# Quick test
+forge test -vv
+
+# Quick build
+forge build
+
+# Quick deploy
+forge script script/Deploy.s.sol --broadcast
+
+# Quick gas check
+forge test --gas-report
+
+# Quick coverage
+forge coverage
+
+# Quick verify
+forge verify-contract <addr> <contract> --chain sepolia
+
+# Quick debug
+forge test --match-test <test> -vvvvv
+
+# Quick snapshot
+forge snapshot --diff
+```
+
+---
+
+**Bookmark this for reference!**
+
+---
+
+**Allan Robinson**
+Forge Commands Master Reference - January 29, 2026
