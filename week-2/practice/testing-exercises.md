@@ -198,3 +198,103 @@ function testFuzz_MultipleUsers(
     uint8 swaps1,
     uint8 swaps2
 ) public {
+    vm.assume(user1 != address(0) && user2 != address(0));
+    vm.assume(user1 != user2);
+    vm.assume(swaps1 < 50 && swaps2 < 50);
+
+    vm.startPrank(user1);
+    for (uint256 i = 0; i < swaps1; i++) {
+        swap(poolKey, 1 ether);
+    }
+    vm.stopPrank();
+
+    vm.startPrank(user2);
+    for (uint256 i = 0; i < swaps2; i++) {
+        swap(poolKey, 1 ether);
+    }
+    vm.stopPrank();
+
+    assertEq(hook.getPoints(user1, poolId), swaps1 * POINTS_PER_SWAP);
+    assertEq(hook.getPoints(user2, poolId), swaps2 * POINTS_PER_SWAP);
+}
+
+function testFuzz_NoOverflow(uint256 largeAmount) public {
+    vm.assume(largeAmount < type(uint256).max / POINTS_PER_SWAP);
+
+    for (uint256 i = 0; i < largeAmount; i++) {
+        vm.prank(alice);
+        swap(poolKey, 1 ether);
+    }
+
+    uint256 points = hook.getPoints(alice, poolId);
+    assertGe(points, 0);
+}
+```
+</details>
+
+---
+
+## Exercise 5: Fork Testing
+
+### Task
+Test hook integration with mainnet pools (forked).
+
+**Requirements**:
+1. Fork mainnet at specific block
+2. Test hook with real pool
+3. Verify behavior matches expectations
+
+<details>
+<summary>Solution</summary>
+
+```bash
+# Run test with fork
+forge test --match-test testFork --fork-url $MAINNET_RPC --fork-block-number 19000000 -vv
+```
+
+```solidity
+function testFork_IntegrationWithMainnet() public {
+    // Fork mainnet
+    vm.createSelectFork(vm.envString("MAINNET_RPC"), 19000000);
+
+    // Get mainnet PoolManager
+    IPoolManager poolManager = IPoolManager(
+        0x000000000004444c5dc75cb358380d2e3de08a90
+    );
+
+    // Deploy hook on fork
+    PointsHook forkHook = new PointsHook(poolManager);
+
+    // Test with real mainnet state
+    // (Actual implementation depends on mainnet pools)
+}
+
+function testFork_RollForward() public {
+    vm.createSelectFork(vm.envString("MAINNET_RPC"));
+
+    uint256 currentBlock = block.number;
+
+    // Perform action
+    vm.prank(alice);
+    swap(poolKey, 1 ether);
+
+    // Fast forward 100 blocks
+    vm.rollFork(currentBlock + 100);
+
+    // Verify state persists
+    uint256 points = hook.getPoints(alice, poolId);
+    assertEq(points, POINTS_PER_SWAP);
+}
+```
+</details>
+
+---
+
+## Exercise 6: Coverage Analysis
+
+### Task
+Achieve >90% test coverage for PointsHook.
+
+**Steps**:
+1. Run `forge coverage --report summary`
+2. Identify uncovered lines
