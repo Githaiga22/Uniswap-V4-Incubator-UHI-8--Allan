@@ -494,3 +494,128 @@ OpenZeppelin > Solmate > Solady
 
 ---
 
+### Q4: deal(address(this), ...) gives you ETH?
+
+**Answer**: Yes, but only in tests.
+
+**How it works**:
+```solidity
+// In test:
+vm.deal(address(this), 100 ether);  // Magic! Now has 100 ETH
+
+// What happened:
+// Foundry's VM directly sets balance[address(this)] = 100 ether
+// No transfer, no minting - just state manipulation
+```
+
+**Production**: This doesn't work on mainnet. Only Foundry's testing VM supports this.
+
+---
+
+### Q5: What does gasleft() do?
+
+**Answer**: Returns remaining gas at that point in execution.
+
+**Usage**:
+```solidity
+uint256 gasBefore = gasleft();  // e.g., 1,000,000
+expensiveOperation();
+uint256 gasAfter = gasleft();   // e.g., 950,000
+
+uint256 gasUsed = gasBefore - gasAfter;  // 50,000
+```
+
+**Tom's pattern**:
+```solidity
+function benchmarkSwap() public {
+    uint256 g = gasleft();
+    swap(...);
+    console.log("Gas used:", g - gasleft());
+}
+```
+
+**Why**: Optimize hooks by measuring gas before/after changes.
+
+---
+
+## Production Checklist
+
+Tom emphasized these before mainnet deployment:
+
+### Pre-Deployment
+- [ ] All tests passing (forge test)
+- [ ] Gas profiling acceptable (forge test --gas-report)
+- [ ] Coverage >90% (forge coverage)
+- [ ] Mined correct hook address
+- [ ] Salt stored securely
+- [ ] Deployment script tested on testnet
+- [ ] Events emitted for all state changes
+
+### Deployment
+- [ ] Deploy to testnet first (Sepolia)
+- [ ] Test on testnet for 24-48 hours
+- [ ] Monitor for issues
+- [ ] Verify contract on Etherscan
+- [ ] Document deployment parameters
+- [ ] Deploy to mainnet
+- [ ] Double-check hook address matches
+
+### Post-Deployment
+- [ ] Initialize hook with pools
+- [ ] Set up indexer (The Graph)
+- [ ] Create frontend interface
+- [ ] Monitor gas costs
+- [ ] Track user adoption
+- [ ] Prepare incident response plan
+
+---
+
+## Key Takeaways
+
+1. **Testing is not optional**: Production hooks must have comprehensive tests. One bug can drain pools.
+
+2. **Gas matters at scale**: 5,000 gas saved per swap × 1,000 swaps/day = meaningful cost reduction.
+
+3. **Events enable scaling**: On-chain state + off-chain indexing = best of both worlds.
+
+4. **Foundry is powerful**: Cheat codes (vm.*) make testing complex scenarios trivial.
+
+5. **Deployment is deterministic**: CREATE2 + salt = predictable addresses. Use it.
+
+6. **Start simple, iterate**: Deploy simple version, gather data, improve based on real usage.
+
+---
+
+## Resources Mentioned
+
+**Testing**:
+- Foundry Book: https://book.getfoundry.sh/
+- Forge cheat codes reference
+- Solmate source code (gas patterns)
+
+**Deployment**:
+- Uniswap V4 hook deployment guide
+- Etherscan verification docs
+- CREATE2 address calculator
+
+**Indexing**:
+- The Graph (subgraph development)
+- Event indexing patterns
+- GraphQL for frontends
+
+---
+
+## Personal Reflection
+
+Testing felt tedious at first, but Tom showed how it catches bugs before they cost real money. The gas profiling especially - seeing concrete numbers for every optimization.
+
+The deployment process is surprisingly simple once you understand CREATE2. The complexity is in testing, not deploying.
+
+Most valuable insight: Events are how you bridge on-chain logic with off-chain UX. Hook stores minimal state, indexer aggregates it, frontend queries efficiently.
+
+Ready to deploy to testnet tomorrow.
+
+---
+
+**Allan Robinson**
+Session 4 Complete - January 29, 2026
