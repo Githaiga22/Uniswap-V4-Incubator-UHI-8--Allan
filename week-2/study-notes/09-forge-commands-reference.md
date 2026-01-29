@@ -298,3 +298,103 @@ function testFuzz_PointsAlwaysPositive(uint8 swapCount) public {
 
 ## Fork Testing
 
+### Run Tests on Forked Mainnet
+
+```bash
+# Fork from latest block
+forge test --fork-url $MAINNET_RPC
+
+# Fork from specific block
+forge test --fork-url $MAINNET_RPC --fork-block-number 19000000
+
+# Run specific test on fork
+forge test --match-test testIntegration --fork-url $MAINNET_RPC -vvv
+```
+
+**Environment setup**:
+```bash
+export MAINNET_RPC="https://eth-mainnet.g.alchemy.com/v2/YOUR_KEY"
+export SEPOLIA_RPC="https://eth-sepolia.g.alchemy.com/v2/YOUR_KEY"
+```
+
+---
+
+## Continuous Integration
+
+### CI-Friendly Commands
+
+```bash
+# Run all tests (no compilation cache)
+forge test --no-match-test "testFuzz_*" --force
+
+# Generate coverage for CI
+forge coverage --report lcov
+
+# Check gas limits
+forge test --gas-limit 30000000
+
+# Fail on warnings
+forge build --deny-warnings
+```
+
+**.github/workflows/test.yml**:
+```yaml
+- name: Run tests
+  run: forge test --gas-report
+
+- name: Check coverage
+  run: forge coverage --report summary
+
+- name: Check gas snapshots
+  run: forge snapshot --check
+```
+
+---
+
+## Performance Profiling
+
+### Flamegraph Generation
+
+```bash
+# Generate flamegraph for test
+forge test --match-test testSwap --flamegraph
+
+# Output: flamegraph-<test>.svg
+# Open in browser to visualize gas usage
+```
+
+**Interpreting flamegraphs**:
+- Width = gas consumed
+- Color = call depth
+- Hover for details
+
+---
+
+## My Daily Workflow
+
+### Morning (Start Development)
+
+```bash
+# 1. Update dependencies
+forge update
+
+# 2. Clean build
+forge clean && forge build
+
+# 3. Run tests
+forge test -vv
+
+# 4. Check coverage
+forge coverage --report summary
+```
+
+### During Development
+
+```bash
+# Run specific test repeatedly
+forge test --match-test testNewFeature -vv
+
+# Check gas impact
+forge snapshot --diff
+
+# Debug failures
