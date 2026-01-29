@@ -298,3 +298,103 @@ Achieve >90% test coverage for PointsHook.
 **Steps**:
 1. Run `forge coverage --report summary`
 2. Identify uncovered lines
+3. Write tests for missing coverage
+4. Re-run and verify >90%
+
+<details>
+<summary>Solution</summary>
+
+```bash
+# Check current coverage
+forge coverage --report summary
+
+# Output:
+# | File           | % Lines | % Statements | % Branches | % Funcs |
+# |----------------|---------|--------------|------------|---------|
+# | PointsHook.sol | 85.00%  | 85.00%       | 75.00%     | 100.00% |
+
+# Identify missing tests:
+forge coverage --report debug | grep "PointsHook"
+
+# Add tests for uncovered paths:
+# - Edge cases (zero amounts, max values)
+# - Error conditions (reverts)
+# - All code branches
+
+# Example: Test view functions
+function testGetPointsForNewUser() public {
+    assertEq(hook.getPoints(bob, poolId), 0);
+}
+
+function testGetSwapCountForNewPool() public {
+    PoolId newPoolId = PoolId.wrap(bytes32(uint256(999)));
+    assertEq(hook.getSwapCount(newPoolId), 0);
+}
+
+# Re-run coverage
+forge coverage --report summary
+
+# Target: >90% all categories
+```
+</details>
+
+---
+
+## Exercise 7: Deployment Testing
+
+### Task
+Test deployment process on local testnet (Anvil).
+
+**Requirements**:
+1. Start Anvil node
+2. Deploy PoolManager
+3. Mine hook address
+4. Deploy hook
+5. Verify deployment
+
+<details>
+<summary>Solution</summary>
+
+```bash
+# Terminal 1: Start Anvil
+anvil
+
+# Terminal 2: Deploy
+forge script script/DeployPointsHook.s.sol \
+    --rpc-url http://localhost:8545 \
+    --broadcast \
+    -vvvv
+```
+
+```solidity
+// script/DeployPointsHook.s.sol
+contract DeployPointsHook is Script {
+    function run() external {
+        address poolManager = vm.envAddress("POOL_MANAGER");
+
+        uint160 flags = uint160(
+            Hooks.AFTER_SWAP_FLAG | Hooks.AFTER_ADD_LIQUIDITY_FLAG
+        );
+
+        (address hookAddress, bytes32 salt) = HookMiner.find(
+            vm.addr(vm.envUint("PRIVATE_KEY")),
+            flags,
+            type(PointsHook).creationCode,
+            abi.encode(poolManager)
+        );
+
+        console.log("Expected hook address:", hookAddress);
+        console.log("Salt:", uint256(salt));
+
+        vm.startBroadcast();
+
+        PointsHook hook = new PointsHook{salt: salt}(
+            IPoolManager(poolManager)
+        );
+
+        require(address(hook) == hookAddress, "Address mismatch");
+
+        console.log("Hook deployed at:", address(hook));
+
+        vm.stopBroadcast();
+    }
