@@ -370,3 +370,127 @@ forge script script/DeployPointsHook.s.sol \
 **Tom's checklist**:
 - [ ] Mined correct salt
 - [ ] Hook address matches expected
+- [ ] PoolManager address correct for network
+- [ ] Gas price acceptable
+- [ ] Private key secure
+- [ ] Verified on Etherscan
+
+---
+
+## Indexing & Routing Integration
+
+### Why Indexing Matters
+
+**The problem**: Your hook tracks points on-chain, but querying thousands of users across pools is gas-prohibitive.
+
+**The solution**: Off-chain indexing (The Graph, custom indexer)
+
+```
+Flow:
+┌────────────┐    Events    ┌────────────┐    GraphQL    ┌────────────┐
+│ PointsHook │ ────────────→ │  Indexer   │ ────────────→ │  Frontend  │
+│ (On-chain) │              │ (Off-chain)│              │   (Webapp)  │
+└────────────┘              └────────────┘              └────────────┘
+     │                           │                           │
+     │ State updates             │ Aggregates data           │ Queries
+     └───────────────────────────┴───────────────────────────┘
+                          Scalable Architecture
+```
+
+### Event Design
+
+**Adding events to PointsHook**:
+```solidity
+event PointsAwarded(address indexed user, PoolId indexed poolId, uint256 points);
+event SwapExecuted(address indexed user, PoolId indexed poolId, uint256 amountIn);
+
+function _assignPoints(address user, PoolId poolId, uint256 points) internal {
+    userPoints[user][poolId] += points;
+    emit PointsAwarded(user, poolId, points);
+}
+```
+
+**Tom's guidelines**:
+- Index all query-relevant fields
+- Emit events for every state change
+- Include timestamps if needed (or use block.timestamp)
+- Keep event data minimal (gas cost)
+
+### Router Integration
+
+**Universal Router compatibility**:
+
+Uniswap's router needs to know your hook exists and what data it needs.
+
+**hookData parameter**:
+```solidity
+// Frontend calls:
+router.swap({
+    key: poolKey,
+    params: swapParams,
+    hookData: abi.encode(referralCode, slippageTolerance)
+});
+
+// Your hook receives:
+function _afterSwap(..., bytes calldata hookData) internal override {
+    (bytes32 referralCode, uint256 slippage) =
+        abi.decode(hookData, (bytes32, uint256));
+    // Use custom data
+}
+```
+
+**Tom's insight**: HookData is your channel to pass user-specific info that doesn't fit in standard swap params.
+
+---
+
+## Questions from the Session
+
+### Q1: Why activate ffi = true in foundry.toml?
+
+**Answer**: FFI (Foreign Function Interface) allows tests to execute external commands. We need this for:
+- HookMiner (address mining via external process)
+- Complex deployment scripts
+- Integration with other tools
+
+**Security**: Never enable in production contracts. Only for testing/scripting.
+
+---
+
+### Q2: Why use Solmate ERC-1155 vs OpenZeppelin?
+
+**Answer**: Gas optimization.
+
+**Comparison**:
+```
+Operation: transferFrom()
+OpenZeppelin: ~25,000 gas (safety checks, hooks, flexibility)
+Solmate:      ~21,000 gas (minimal, optimized)
+Savings:       4,000 gas per transfer
+
+At scale:
+1M transfers/day × 4,000 gas × $0.00001/gas = $40/day savings
+```
+
+**Trade-off**: Solmate has fewer features. OpenZeppelin is safer for complex use cases.
+
+**Tom's take**: For production hooks, every gas matters. Use Solmate unless you need OpenZeppelin's extra features.
+
+---
+
+### Q3: What is Solady?
+
+**Answer**: Even more gas-optimized library than Solmate.
+
+**Hierarchy**:
+```
+Gas Efficiency (low to high):
+OpenZeppelin < Solmate < Solady
+
+Documentation (high to low):
+OpenZeppelin > Solmate > Solady
+```
+
+**Tom's recommendation**: Start with Solmate. Move to Solady only if gas profiling shows you need it.
+
+---
+
