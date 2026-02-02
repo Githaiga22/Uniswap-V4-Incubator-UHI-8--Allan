@@ -201,3 +201,206 @@ The result is scaled by 2^192, not 2^96!
 
 **Correct pattern**:
 ```solidity
+uint256 result = (a * b) / 2**96;  // Restore correct scale
+```
+
+**Why this matters**:
+- Forgetting to divide causes massive value inflation
+- Critical bug in price/liquidity calculations
+- Can drain pools if used in swap logic
+
+**Real bug scenario**:
+```solidity
+// WRONG
+uint160 wrongPrice = price1 * price2;  // Scaled by 2^192!
+
+// CORRECT
+uint160 correctPrice = uint160((uint256(price1) * uint256(price2)) / 2**96);
+```
+</details>
+
+---
+
+### Question 7: What's the maximum price a uint160 sqrtPriceX96 can represent?
+
+**A)** 2^160
+**B)** ~3.4 × 10^38
+**C)** 2^96
+**D)** Unlimited
+
+<details>
+<summary>Answer</summary>
+
+**Correct Answer: B** (~3.4 × 10^38)
+
+**Calculation**:
+```
+Max sqrtPriceX96 = 2^160 - 1
+
+Divide by 2^96 to get √P:
+√P_max = (2^160 - 1) / 2^96
+√P_max ≈ 2^64 ≈ 1.844 × 10^19
+
+Square to get P:
+P_max = (√P_max)^2
+P_max ≈ 3.4 × 10^38
+```
+
+**Practical range**:
+- Min tick: -887,272
+- Max tick: 887,272
+- Covers price ratios from ~10^-38 to ~10^38
+
+**Why this range?**
+- Can represent any realistic token pair price
+- From $0.00...01 to $10^38
+- Even extreme ratios (SHIB/BTC) fit comfortably
+</details>
+
+---
+
+## Section 3: Hook Development
+
+### Question 8: Why must hook addresses encode their permissions?
+
+**A)** For gas optimization
+**B)** To prevent unauthorized hooks
+**C)** For quick permission validation without storage reads
+**D)** It's just a convention
+
+<details>
+<summary>Answer</summary>
+
+**Correct Answer: C**
+
+Hook addresses encode permissions in the last 14 bits for **gas-efficient validation**.
+
+**How it works**:
+```solidity
+// Instead of:
+mapping(address => Permissions) public hookPermissions;  // Storage read: 2,100 gas
+
+// V4 does:
+uint160 flags = uint160(hookAddress) & 0x3FFF;  // Bitwise AND: <100 gas
+bool hasAfterSwap = flags & AFTER_SWAP_FLAG != 0;
+```
+
+**Benefits**:
+- No storage reads (saves ~2,000 gas per check)
+- Permissions immutable (can't be changed post-deployment)
+- Protocol validates instantly using address bits
+
+**Trade-off**:
+- Must use CREATE2 with salt mining
+- Deployment takes longer (finding valid address)
+- But saves gas on EVERY pool interaction
+</details>
+
+---
+
+### Question 9: What does the _assignPoints pattern improve?
+
+**A)** Gas efficiency
+**B)** Code organization and maintainability
+**C)** Event emission consistency
+**D)** All of the above
+
+<details>
+<summary>Answer</summary>
+
+**Correct Answer: D** (All of the above)
+
+The `_assignPoints` helper function provides multiple benefits:
+
+**1. Gas Efficiency**:
+```solidity
+// Function inlining by compiler
+// Single location for optimization
+```
+
+**2. Code Organization**:
+```solidity
+// DRY principle - Don't Repeat Yourself
+function _assignPoints(address user, PoolId poolId, uint256 points) internal {
+    userPoints[user][poolId] += points;
+    emit PointsAwarded(user, poolId, points);
+}
+
+// Used in multiple places
+function _afterSwap(...) internal override {
+    _assignPoints(sender, poolId, POINTS_PER_SWAP);  // Clean!
+}
+```
+
+**3. Event Consistency**:
+```solidity
+// Always emits event when assigning points
+// Can't forget to emit in one place but not another
+```
+
+**4. Maintainability**:
+- Change logic once, affects all callsites
+- Easier testing (test one function)
+- Clearer code intent
+
+**Pattern extends to**:
+- `_validateAccess()`
+- `_updateMetrics()`
+- `_calculateFee()`
+</details>
+
+---
+
+### Question 10: Why use events in hooks?
+
+**A)** Required by the protocol
+**B)** For debugging only
+**C)** Enable off-chain indexing and frontend queries
+**D)** Increase gas costs
+
+<details>
+<summary>Answer</summary>
+
+**Correct Answer: C**
+
+Events are **critical for scalability** and user experience:
+
+**Problem without events**:
+```solidity
+// To get user's total points across all pools:
+// Must iterate ALL pools on-chain
+// Impossible / extremely expensive
+```
+
+**Solution with events**:
+```solidity
+emit PointsAwarded(user, poolId, points);
+
+// Off-chain indexer (The Graph) listens
+// Aggregates data efficiently
+// Frontend queries via GraphQL
+```
+
+**Architecture**:
+```
+Hook (on-chain)     Indexer (off-chain)     Frontend
+     │                     │                     │
+     ├─ Emit events ──────→ Index events        │
+     │                     │                     │
+     │                     ├─ Aggregate data    │
+     │                     │                     │
+     │                     │←─── Query data ────┤
+```
+
+**Gas consideration**:
+- Events cost ~375-750 gas per indexed field
+- Tiny compared to storage (20,000 gas)
+- Worth it for UX scalability
+
+**Why other options wrong**:
+- A: Optional, but highly recommended
+- B: Events are production tools, not just debug
+- D: Events are cheaper than alternatives
+</details>
+
+---
