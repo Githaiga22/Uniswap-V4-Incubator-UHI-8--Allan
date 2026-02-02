@@ -404,3 +404,206 @@ Hook (on-chain)     Indexer (off-chain)     Frontend
 </details>
 
 ---
+
+## Section 4: Testing & Deployment
+
+### Question 11: What does `vm.deal(address, amount)` do?
+
+**A)** Transfers ETH between addresses
+**B)** Sets an address's ETH balance directly (test only)
+**C)** Calculates deal price
+**D)** Creates a mock ERC20 token
+
+<details>
+<summary>Answer</summary>
+
+**Correct Answer: B**
+
+`vm.deal()` is a Foundry **cheat code** that directly sets ETH balance in tests:
+
+```solidity
+// Before
+assertEq(alice.balance, 0);
+
+// Magic!
+vm.deal(alice, 100 ether);
+
+// After
+assertEq(alice.balance, 100 ether);
+```
+
+**How it works**:
+- Foundry's EVM can manipulate state freely
+- No transfer, no minting - just sets `balance[address] = amount`
+- **Only works in tests**, not on mainnet
+
+**Use cases**:
+```solidity
+// Give test contracts ETH
+vm.deal(address(this), 10 ether);
+
+// Fund multiple users
+address[] memory users = [alice, bob, charlie];
+for (uint i = 0; i < users.length; i++) {
+    vm.deal(users[i], 100 ether);
+}
+```
+
+**Similar cheat codes**:
+- `deal(token, user, amount)` - Set ERC20 balance
+- `vm.roll(block)` - Set block number
+- `vm.warp(timestamp)` - Set block timestamp
+</details>
+
+---
+
+### Question 12: What does `forge test -vvvv` show that `-vv` doesn't?
+
+**A)** Nothing, same output
+**B)** Gas reports
+**C)** Stack traces and detailed execution paths
+**D)** Code coverage
+
+<details>
+<summary>Answer</summary>
+
+**Correct Answer: C**
+
+**Verbosity comparison**:
+```bash
+forge test        # Pass/fail only
+forge test -v     # Test names
+forge test -vv    # + console.log output
+forge test -vvv   # + Stack traces on failure
+forge test -vvvv  # + Setup traces & call depth
+forge test -vvvvv # + ALL internal calls (very verbose)
+```
+
+**Example `-vvvv` output**:
+```
+[FAIL. Reason: revert: Insufficient balance]
+    ├─ [0] VM::prank(alice)
+    ├─ [2000] PointsHook::swap()
+    │   ├─ [500] PoolManager::lock()
+    │   │   └─ ← revert: Insufficient balance
+    │   └─ ← revert
+    └─ ← revert
+
+Traces:
+  [2000] PointsHook::swap()
+    ├─ caller: alice (0x123...)
+    ├─ gas: 50000
+    └─ ERROR: Insufficient balance at line 42
+```
+
+**When to use each**:
+- `-vv`: Development (see your logs)
+- `-vvv`: Failed test (where did it revert?)
+- `-vvvv`: Complex debugging (full execution trace)
+- `-vvvvv`: Rarely (analyzing internal behavior)
+</details>
+
+---
+
+### Question 13: Why use `vm.rollFork()` in tests?
+
+**A)** To restart the test
+**B)** To time travel to specific block in forked tests
+**C)** To roll back transactions
+**D)** To switch networks
+
+<details>
+<summary>Answer</summary>
+
+**Correct Answer: B**
+
+`vm.rollFork()` moves to a different block in forked mainnet tests:
+
+```solidity
+function testForkTimeTravel() public {
+    // Fork mainnet
+    vm.createSelectFork(MAINNET_RPC);
+
+    // Current state at block 19,000,000
+    uint256 currentBlock = block.number;
+    console.log("Current:", currentBlock);  // 19,000,000
+
+    // Perform action
+    swap(poolKey, 1 ether);
+
+    // Fast forward 100 blocks
+    vm.rollFork(currentBlock + 100);
+    console.log("After roll:", block.number);  // 19,000,100
+
+    // State from 100 blocks later is now loaded
+    // Can test how hook behaves over time
+}
+```
+
+**Use cases**:
+- Test time-dependent logic (vesting, expiry)
+- Simulate market conditions at different blocks
+- Test protocol upgrades
+- Verify historical behavior
+
+**Important**:
+- Only works with forked tests
+- Rolling forward: `vm.rollFork(block.number + n)`
+- Rolling backward: `vm.rollFork(block.number - n)`
+- Can jump to any block in chain history
+</details>
+
+---
+
+### Question 14: What's the purpose of `forge coverage`?
+
+**A)** Generate insurance coverage
+**B)** Measure test coverage (lines/branches/functions tested)
+**C)** Deploy contracts with coverage
+**D)** Optimize gas coverage
+
+<details>
+<summary>Answer</summary>
+
+**Correct Answer: B**
+
+`forge coverage` analyzes which parts of your code are tested:
+
+```bash
+$ forge coverage --report summary
+
+| File            | % Lines | % Statements | % Branches | % Funcs |
+|-----------------|---------|--------------|------------|---------|
+| PointsHook.sol  | 92.31%  | 93.75%       | 75.00%     | 100.00% |
+| MyFirstHook.sol | 100.00% | 100.00%      | 100.00%    | 100.00% |
+```
+
+**What it measures**:
+- **Lines**: Individual lines executed
+- **Statements**: Solidity statements run
+- **Branches**: Both paths of if/else tested
+- **Functions**: All functions called
+
+**Target**: >90% coverage for production code
+
+**Finding gaps**:
+```bash
+forge coverage --report debug
+
+# Shows:
+PointsHook.sol
+  Line 42: NOT COVERED (edge case: zero amount)
+  Line 67: NOT COVERED (revert path)
+```
+
+**Best practice**:
+```bash
+# Before deployment
+forge coverage --report summary
+
+# If < 90%, write more tests
+# Focus on uncovered branches (error paths)
+```
+</details>
+
+---
