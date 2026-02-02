@@ -810,3 +810,207 @@ PointsHook hook = new PointsHook{salt: salt}(poolManager);
 
 **Correct Answer: B**
 
+Transient storage (EIP-1153) is dramatically cheaper for temporary data:
+
+**Gas comparison**:
+```
+SSTORE: 20,000 gas  (permanent storage)
+TSTORE:    100 gas  (temporary, auto-clears)
+```
+
+**Use case in V4**:
+```solidity
+// PoolManager uses TSTORE for delta tracking
+function lock(bytes calldata data) external {
+    // TSTORE deltas
+    _accountDelta(token0, amount0);
+    _accountDelta(token1, amount1);
+
+    // Execute callback
+    ILockCallback(msg.sender).lockAcquired(data);
+
+    // TLOAD deltas and verify settled
+    _verifySettlement();
+
+    // Auto-clear at end of transaction ✨
+}
+```
+
+**Properties**:
+- ✅ Cleared automatically after transaction
+- ✅ No gas cost for cleanup
+- ✅ Perfect for temporary state
+- ❌ Can't read in separate transaction
+- ❌ Not supported on all chains yet
+
+**Hook usage**:
+```solidity
+// Track temporary state during multi-step operations
+function _beforeSwap(...) internal override {
+    assembly {
+        tstore(TEMP_SLOT, value)  // Cheap temp storage
+    }
+    return (selector, delta, fee);
+}
+
+function _afterSwap(...) internal override {
+    uint256 tempValue;
+    assembly {
+        tempValue := tload(TEMP_SLOT)  // Read temp value
+    }
+    // Use it, will auto-clear after transaction
+}
+```
+</details>
+
+---
+
+### Question 19: Why can't multiple hooks attach to one pool?
+
+**A)** Gas optimization
+**B)** Security concerns
+**C)** One hook address encoded in PoolKey
+**D)** Protocol limitation
+
+<details>
+<summary>Answer</summary>
+
+**Correct Answer: C**
+
+Each pool's `PoolKey` contains exactly **one** hook address:
+
+```solidity
+struct PoolKey {
+    Currency currency0;
+    Currency currency1;
+    uint24 fee;
+    int24 tickSpacing;
+    IHooks hooks;  // ← Single address only
+}
+```
+
+**Implication**: One pool = one hook (or no hook)
+
+**Design philosophy**:
+- Hooks should be composable **within themselves**
+- One hook can implement many features
+- Keeps architecture simple and predictable
+
+**Workaround for "multiple hooks"**:
+```solidity
+contract CompositeHook is BaseHook {
+    PointsHook public pointsHook;
+    FeeHook public feeHook;
+    AccessHook public accessHook;
+
+    function _afterSwap(...) internal override {
+        // Delegate to multiple "sub-hooks"
+        pointsHook.afterSwap(...);
+        feeHook.afterSwap(...);
+        accessHook.afterSwap(...);
+
+        return (selector, delta);
+    }
+}
+```
+
+**Benefits of single hook**:
+- Clear ownership
+- No hook ordering issues
+- Simpler testing
+- Predictable gas costs
+
+**Pattern**: Build one comprehensive hook instead of many small ones
+</details>
+
+---
+
+### Question 20: What's the gas target for hook overhead?
+
+**A)** < 10,000 gas
+**B)** < 50,000 gas
+**C)** < 100,000 gas
+**D)** No limit
+
+<details>
+<summary>Answer</summary>
+
+**Correct Answer: B** (< 50,000 gas is reasonable)
+
+**Context**:
+- Base swap (no hook): ~120,000 gas
+- With hook: Should stay under ~170,000 gas
+- Hook overhead target: < 50,000 gas
+
+**Why this matters**:
+```
+At 50,000 gas overhead:
+× 1,000 swaps/day
+× $0.00002 per gas (20 gwei, $2000 ETH)
+= $1/day in extra gas
+
+At 100,000 gas overhead:
+= $2/day in extra gas
+= $730/year
+```
+
+**Gas breakdown**:
+```solidity
+// Minimal hook
+function _afterSwap(...) internal override {
+    count++;  // ~5,000 gas (warm SSTORE)
+    return (selector, 0);
+}
+// Total overhead: ~10,000 gas ✅
+
+// Heavy hook
+function _afterSwap(...) internal override {
+    userPoints[sender][poolId] += 10;  // ~20,000 gas (cold SSTORE)
+    totalSwaps[poolId]++;               // ~5,000 gas (warm SSTORE)
+    emit PointsAwarded(...);            // ~2,000 gas
+    emit SwapExecuted(...);             // ~1,500 gas
+    _updateMetrics();                   // ~10,000 gas
+    return (selector, 0);
+}
+// Total overhead: ~40,000 gas ✅ (acceptable)
+
+// Extreme hook
+function _afterSwap(...) internal override {
+    // Multiple storage writes
+    // External calls
+    // Complex calculations
+    // Total: 150,000 gas ❌ (too expensive!)
+}
+```
+
+**Optimization strategies**:
+- Use events instead of storage when possible
+- Batch updates to amortize costs
+- Use transient storage for temporary state
+- Avoid external calls in hooks
+- Profile with `forge test --gas-report`
+</details>
+
+---
+
+## Scoring Guide
+
+- **Section 1** (Q1-5): 25 points - Ticks & Price Mathematics
+- **Section 2** (Q6-7): 10 points - Q64.96 Advanced
+- **Section 3** (Q8-10): 15 points - Hook Development
+- **Section 4** (Q11-15): 25 points - Testing & Deployment
+- **Section 5** (Q16-20): 25 points - Advanced Concepts
+
+**Total**: 100 points
+
+**Grading**:
+- 90-100: Expert - Ready for production hook development
+- 80-89: Advanced - Strong understanding, minor gaps
+- 70-79: Intermediate - Good foundation, needs practice
+- 60-69: Beginner - Review materials thoroughly
+- < 60: Study Week 2 materials again
+
+---
+
+**Allan Robinson**
+Week 2 Comprehensive Quiz - January 29, 2026
