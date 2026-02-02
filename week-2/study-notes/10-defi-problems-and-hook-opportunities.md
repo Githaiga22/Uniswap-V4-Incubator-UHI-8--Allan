@@ -481,3 +481,164 @@ contract JITDefenseHook is BaseHook {
 contract PrivacyHook is BaseHook {
     // Commit-reveal scheme
     mapping(bytes32 => SwapCommitment) public commitments;
+
+    struct SwapCommitment {
+        address trader;
+        uint256 commitBlock;
+        bytes32 swapHash;
+    }
+
+    function commitSwap(bytes32 swapHash) external {
+        commitments[swapHash] = SwapCommitment({
+            trader: msg.sender,
+            commitBlock: block.number,
+            swapHash: swapHash
+        });
+    }
+
+    function _beforeSwap(..., bytes calldata hookData) internal override {
+        // Verify commit-reveal
+        bytes32 swapHash = keccak256(abi.encode(params, hookData));
+        SwapCommitment memory commit = commitments[swapHash];
+
+        require(commit.trader == sender, "Invalid commitment");
+        require(block.number > commit.commitBlock + 1, "Too soon");
+        require(block.number < commit.commitBlock + 10, "Expired");
+
+        // Execute swap privately
+        return (selector, ZERO_DELTA, 0);
+    }
+}
+```
+
+**Monetization**:
+- **Per-swap fee**: 2 bps for privacy protection
+- **Institutional tier**: Private mempool access via subscription
+- **SDK licensing**: Sell privacy SDK to wallets/aggregators
+
+**Competitive landscape**:
+- Flashbots SUAVE (complex, centralized)
+- Private RPCs (doesn't solve in-protocol MEV)
+- This hook: Protocol-native privacy, permissionless
+
+**Why fundable**:
+- Huge TAM (every trader benefits)
+- Can expand beyond Uniswap (privacy-as-a-service)
+- Growing regulatory pressure for transaction privacy
+
+---
+
+### Idea 7: Dynamic Fee Hook (Volatility-Adjusted Pricing)
+
+**Problem solved**: Static fees miss revenue during high volatility
+
+**How it works**:
+```solidity
+contract DynamicFeeHook is BaseHook {
+    function _beforeSwap(...) internal override {
+        // Measure recent volatility
+        uint256 volatility = calculateRecentVolatility(key);
+
+        // Adjust fee based on volatility
+        uint24 dynamicFee;
+        if (volatility < 1%) {
+            dynamicFee = 5;   // 0.05% in low vol
+        } else if (volatility < 5%) {
+            dynamicFee = 30;  // 0.30% in medium vol
+        } else {
+            dynamicFee = 100; // 1.00% in high vol
+        }
+
+        return (selector, ZERO_DELTA, dynamicFee);
+    }
+}
+```
+
+**Monetization**:
+- **Rev share**: Hook captures 20% of additional fees generated
+- **Protocol fee**: Fixed 1 bp on all swaps using dynamic fees
+
+**Value proposition**:
+- LPs earn more during volatility spikes (IL compensation)
+- Traders pay fair price for liquidity provision risk
+- Pools stay competitive across market regimes
+
+**Revenue model**:
+```
+$1B daily volume on dynamic fee pools
+Average additional 10 bps from dynamic pricing
+= $1M/day additional fees
+Hook captures 20% = $200K/day = $73M/year
+```
+
+**Why fundable**:
+- Clear LP benefit (compensate for higher IL risk)
+- Immediate revenue generation
+- Easy to understand and adopt
+- Can become industry standard
+
+---
+
+## Part 3: Funding Strategy
+
+### 3.1 VC Pitch Framework
+
+**Problem-Solution-Market-Traction-Ask**
+
+**Example pitch (Anti-MEV Hook)**:
+```
+Problem: $289M lost to sandwich attacks in 16 months
+Solution: Protocol-level MEV detection and penalty system
+Market: $100B+ annual DEX volume
+Traction: Pilot with 3 major pools, $50M TVL, 98% attack prevention
+Ask: $2M seed round, 18-month runway, path to $18M ARR
+```
+
+**Target investors**:
+- **Thesis-driven**: Paradigm, a16z crypto, Electric Capital
+- **DeFi-focused**: Framework Ventures, Nascent, Dragonfly
+- **Strategic**: Uniswap Labs, Coinbase Ventures, Jump Crypto
+
+### 3.2 Revenue Model Comparison
+
+| Hook Idea | Revenue Model | Year 1 Projection | Defensibility |
+|-----------|--------------|-------------------|---------------|
+| Anti-MEV Shield | 5 bps per swap | $5-18M | MEV pattern database, network effects |
+| Oracle Fusion | Protocol licensing | $2-10M | Multi-oracle integration, B2B partnerships |
+| IL Insurance | Premium + pool fees | $4-8M | Actuarial models, insurance pool size |
+| Smart Rebalancing | SaaS + performance | $10-34M | Position management algorithms |
+| JIT Defense | Fee redistribution | $3-7M | First-mover, LP loyalty |
+| Privacy Hook | Per-swap fee | $8-20M | Commit-reveal scheme, privacy tech |
+| Dynamic Fees | Rev share | $15-73M | Volatility modeling, LP value prop |
+
+**Highest potential**: Dynamic Fees ($73M ceiling) + Smart Rebalancing ($34M)
+
+**Fastest to revenue**: Anti-MEV ($5M achievable in 6 months)
+
+**Most defensible**: Oracle Fusion (technical moat + B2B contracts)
+
+### 3.3 GTM Strategy
+
+**Phase 1: Pilot (Months 1-3)**
+- Deploy on 3-5 Uniswap V4 pools
+- Measure impact vs control groups
+- Gather user testimonials
+
+**Phase 2: Growth (Months 4-9)**
+- Launch on 50+ pools
+- Integrate with wallet UIs (MetaMask, Rainbow, Rabby)
+- Partner with aggregators (1inch, CoW Protocol)
+
+**Phase 3: Scale (Months 10-18)**
+- Cross-chain expansion (Base, Arbitrum, Optimism)
+- White-label to other DEXs (SushiSwap, PancakeSwap)
+- Enterprise tier for institutional clients
+
+**Phase 4: Platform (Year 2+)**
+- Hook marketplace (let others build on your hooks)
+- Developer tools and SDKs
+- Transition to protocol/DAO model
+
+---
+
+## Part 4: Technical Feasibility
