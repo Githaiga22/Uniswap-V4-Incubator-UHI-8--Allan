@@ -159,3 +159,164 @@ contract AntiMEVHook is BaseHook {
         SwapMetrics memory lastSwap = lastSwaps[txHash];
 
         if (isSandwichPattern(lastSwap, impact)) {
+            // 3. Apply penalty: Increase fee for likely attacker
+            uint24 penaltyFee = baseFee * 10; // 10x fee
+            return (selector, ZERO_DELTA, penaltyFee);
+        }
+
+        // 4. Normal users: Route through private mempool
+        return (selector, ZERO_DELTA, 0);
+    }
+
+    function _afterSwap(...) internal override {
+        // Track swap for pattern detection
+        lastSwaps[...] = SwapMetrics({
+            sqrtPrice: currentPrice,
+            blockNumber: block.number,
+            amountIn: delta
+        });
+    }
+}
+```
+
+**Monetization**:
+- Charge 5 bps (0.05%) on protected swaps
+- $1B daily Uniswap volume × 0.05% = $500K/day = **$182.5M/year**
+- Even 10% market share = **$18M/year** in fees
+
+**Why fundable**:
+- Solves $289M/year problem
+- Clear value proposition for users
+- Network effects (more users = better protection)
+- Could become default for all major pools
+
+**Technical challenges**:
+- MEV detection accuracy (false positives hurt UX)
+- Gas costs of complex logic
+- Integration with private mempools
+
+**Competitive moat**: First-mover advantage + MEV pattern database
+
+---
+
+### Idea 2: Oracle Fusion Hook (Multi-Source Price Validation)
+
+**Problem solved**: $8.8M in oracle manipulation + price reliability
+
+**How it works**:
+```solidity
+contract OracleFusionHook is BaseHook {
+    IChainlinkAggregator public chainlink;
+    IUniswapTWAP public twap;
+    IPyth public pyth;
+
+    uint256 public constant MAX_DEVIATION = 200; // 2%
+
+    function _beforeSwap(...) internal override {
+        uint256 chainlinkPrice = chainlink.latestAnswer();
+        uint256 twapPrice = getTWAPPrice(key);
+        uint256 pythPrice = pyth.getPrice(...);
+
+        // Detect manipulation
+        if (pricesDeviateTooMuch(chainlinkPrice, twapPrice, pythPrice)) {
+            // Freeze trading or use median price
+            uint256 medianPrice = getMedian([chainlinkPrice, twapPrice, pythPrice]);
+
+            // Adjust swap to use median instead of spot
+            BalanceDelta adjusted = adjustForManipulation(delta, medianPrice);
+
+            return (selector, adjusted, 0);
+        }
+
+        return (selector, ZERO_DELTA, 0);
+    }
+}
+```
+
+**Monetization strategies**:
+1. **Licensing model**: Protocols pay 10 bps to use the hook
+2. **Insurance pool**: Users pay premium, get reimbursed for oracle attacks
+3. **Data feed sales**: Aggregated oracle confidence scores to other protocols
+
+**Market size**:
+- Every DeFi lending protocol needs oracle security
+- $50B TVL in lending markets
+- 0.1% annual fee = **$50M addressable market**
+
+**Why fundable**:
+- Solves critical security issue
+- B2B revenue model (protocol partnerships)
+- Can pivot to general oracle-as-a-service
+- Defensible IP in oracle fusion algorithms
+
+**Go-to-market**:
+- Partner with Aave, Compound, MakerDAO
+- Offer as security upgrade for existing pools
+- Insurance product for high-value pools
+
+---
+
+### Idea 3: Impermanent Loss Insurance Hook
+
+**Problem solved**: 51.75% of LPs losing money
+
+**How it works**:
+```solidity
+contract ILInsuranceHook is BaseHook {
+    struct Position {
+        uint256 liquidity;
+        uint160 entryPrice;
+        uint256 premiumPaid;
+        int24 tickLower;
+        int24 tickUpper;
+    }
+
+    mapping(address => mapping(PoolId => Position)) public positions;
+    mapping(PoolId => uint256) public insurancePool;
+
+    function _afterAddLiquidity(...) internal override {
+        // Collect insurance premium (0.5% of liquidity value)
+        uint256 premium = calculatePremium(delta, key);
+        insurancePool[poolId] += premium;
+
+        // Record position entry
+        positions[sender][poolId] = Position({
+            liquidity: params.liquidityDelta,
+            entryPrice: getCurrentSqrtPrice(key),
+            premiumPaid: premium,
+            tickLower: params.tickLower,
+            tickUpper: params.tickUpper
+        });
+
+        emit InsurancePurchased(sender, poolId, premium);
+        return (selector, BalanceDelta.wrap(0));
+    }
+
+    function _afterRemoveLiquidity(...) internal override {
+        Position memory pos = positions[sender][poolId];
+
+        // Calculate impermanent loss
+        uint256 currentValue = calculateCurrentValue(pos, key);
+        uint256 hodlValue = calculateHodlValue(pos);
+
+        if (hodlValue > currentValue) {
+            uint256 ilAmount = hodlValue - currentValue;
+
+            // Pay out from insurance pool (up to 80% coverage)
+            uint256 payout = min(ilAmount * 80 / 100, insurancePool[poolId]);
+            insurancePool[poolId] -= payout;
+
+            // Transfer payout to LP
+            emit ILPayoutProcessed(sender, poolId, payout);
+        }
+
+        return (selector, BalanceDelta.wrap(0));
+    }
+}
+```
+
+**Monetization**:
+- **Premium model**: LPs pay 0.5% premium for IL insurance
+- **Pool fees**: Hook captures 20% of swap fees to fund insurance pool
+- **Unclaimed premiums**: If no IL occurs, premium stays in protocol treasury
+
