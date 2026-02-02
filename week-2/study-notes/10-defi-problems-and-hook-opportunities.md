@@ -320,3 +320,164 @@ contract ILInsuranceHook is BaseHook {
 - **Pool fees**: Hook captures 20% of swap fees to fund insurance pool
 - **Unclaimed premiums**: If no IL occurs, premium stays in protocol treasury
 
+**Unit economics**:
+```
+Uniswap V3 TVL: ~$4B
+Assume 10% adoption: $400M insured
+Annual premium at 2%: $8M
+Insurance payouts (40% IL rate): $3.2M
+Net revenue: $4.8M/year
+
+Scale to $4B insured = $48M/year revenue
+```
+
+**Why fundable**:
+- Addresses biggest LP pain point
+- Proven insurance model (traditional finance)
+- Recurring revenue from premiums
+- Network effects (larger pool = better coverage)
+
+**Risks to mitigate**:
+- Adverse selection (only risky positions buy insurance)
+- Pool depletion in extreme volatility
+- Premium pricing model accuracy
+
+**Solution**: Dynamic pricing based on:
+- Pool volatility history
+- Range width (narrow = higher premium)
+- Market regime (bull/bear/sideways)
+
+---
+
+### Idea 4: Smart Rebalancing Hook (Automated LP Management)
+
+**Problem solved**: Gas costs + complexity of manual rebalancing
+
+**How it works**:
+```solidity
+contract SmartRebalancingHook is BaseHook {
+    struct RebalanceConfig {
+        uint256 rebalanceThreshold; // % price change to trigger
+        int24 rangeWidth;            // New range size
+        bool autoCompound;           // Compound fees?
+    }
+
+    mapping(address => mapping(PoolId => RebalanceConfig)) public configs;
+
+    function _afterSwap(...) internal override {
+        uint160 currentPrice = getCurrentSqrtPrice(key);
+
+        // Check all positions for rebalancing
+        // (In production, use off-chain keeper + multicall)
+        if (shouldRebalance(sender, poolId, currentPrice)) {
+            // 1. Remove liquidity from old range
+            BalanceDelta removed = removeLiquidity(sender, poolId);
+
+            // 2. Calculate new optimal range
+            (int24 newLower, int24 newUpper) = calculateNewRange(
+                currentPrice,
+                configs[sender][poolId].rangeWidth
+            );
+
+            // 3. Add liquidity to new range
+            addLiquidity(sender, poolId, newLower, newUpper, removed);
+
+            emit PositionRebalanced(sender, poolId, newLower, newUpper);
+        }
+
+        return (selector, 0);
+    }
+}
+```
+
+**Monetization**:
+- **SaaS model**: $10-100/month per automated position
+- **Performance fee**: 10% of additional fees earned from better positioning
+- **Pro tier**: Advanced strategies (volatility-based ranges, JIT defense)
+
+**Target market**:
+- Retail LPs (95% of LPs, mostly unprofitable)
+- DAO treasuries providing liquidity
+- Institutional LPs wanting passive management
+
+**Revenue projections**:
+```
+100,000 retail LP positions
+× $20/month average
+= $2M monthly = $24M/year SaaS revenue
+
++ 10% performance fee on $100M managed
+= $10M/year performance fees
+
+Total: $34M/year potential
+```
+
+**Why fundable**:
+- Proven SaaS business model
+- Clear ROI for users (profitable vs unprofitable)
+- Scalable (software, not capital intensive)
+- Moat through position management algorithms
+
+---
+
+### Idea 5: JIT Defense Hook (Fair Fee Distribution)
+
+**Problem solved**: JIT LPs reducing passive LP earnings by 44%
+
+**How it works**:
+```solidity
+contract JITDefenseHook is BaseHook {
+    // Minimum liquidity duration to earn full fees
+    uint256 public constant MIN_DURATION = 5 minutes;
+
+    mapping(address => mapping(PoolId => uint256)) public liquidityAddTime;
+
+    function _afterAddLiquidity(...) internal override {
+        liquidityAddTime[sender][poolId] = block.timestamp;
+        return (selector, BalanceDelta.wrap(0));
+    }
+
+    function _beforeSwap(...) internal override {
+        // Calculate time-weighted fee distribution
+        // JIT LPs (< 5 min) get reduced fees
+
+        uint256 duration = block.timestamp - liquidityAddTime[sender][poolId];
+        uint256 feeMultiplier = calculateFeeMultiplier(duration);
+
+        // Redistribute JIT-captured fees to passive LPs
+        if (feeMultiplier < 100) {
+            // JIT LP, reduce their fee share
+            return (selector, ZERO_DELTA, 0);
+        }
+
+        return (selector, ZERO_DELTA, 0);
+    }
+}
+```
+
+**Monetization**:
+- **Protocol owned liquidity**: Hook captures 10% of redistributed fees
+- **White-label**: Sell to other DEXs facing JIT problems
+- **LP subscription**: Passive LPs pay to access JIT-protected pools
+
+**Market validation**:
+- JIT reducing passive LP revenue by 44% = massive pain point
+- Retail LPs will migrate to fair pools
+- First-mover advantage in "LP-friendly" narrative
+
+**Why fundable**:
+- Proven problem ($44 out of every $100 stolen by JIT)
+- Aligns incentives (long-term LPs rewarded)
+- Competitive advantage for pools using this hook
+
+---
+
+### Idea 6: Privacy-Preserving Hook (Anti-Frontrunning)
+
+**Problem solved**: $8M/month extracted via frontrunning on Ethereum
+
+**How it works**:
+```solidity
+contract PrivacyHook is BaseHook {
+    // Commit-reveal scheme
+    mapping(bytes32 => SwapCommitment) public commitments;
