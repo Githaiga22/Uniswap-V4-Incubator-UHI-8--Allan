@@ -607,3 +607,206 @@ forge coverage --report summary
 </details>
 
 ---
+
+### Question 15: What does gasleft() measure?
+
+**A)** Total gas used by transaction
+**B)** Remaining gas at that point in execution
+**C)** Gas price in gwei
+**D)** Gas limit of block
+
+<details>
+<summary>Answer</summary>
+
+**Correct Answer: B**
+
+`gasleft()` returns the **remaining gas** at the exact point it's called:
+
+```solidity
+function benchmarkSwap() public {
+    uint256 gasBefore = gasleft();  // e.g., 1,000,000
+
+    swap(poolKey, 1 ether);  // Consumes 50,000 gas
+
+    uint256 gasAfter = gasleft();   // e.g., 950,000
+
+    uint256 gasUsed = gasBefore - gasAfter;  // 50,000
+    console.log("Gas consumed:", gasUsed);
+}
+```
+
+**Use cases**:
+
+**1. Gas profiling**:
+```solidity
+function testGas_HookOverhead() public {
+    uint256 g1 = gasleft();
+    swapWithoutHook();
+    uint256 noHookCost = g1 - gasleft();
+
+    uint256 g2 = gasleft();
+    swapWithHook();
+    uint256 withHookCost = g2 - gasleft();
+
+    uint256 hookOverhead = withHookCost - noHookCost;
+    console.log("Hook adds:", hookOverhead, "gas");
+}
+```
+
+**2. Optimization comparison**:
+```solidity
+// Test version A
+uint256 g = gasleft();
+implementationA();
+uint256 costA = g - gasleft();
+
+// Test version B
+g = gasleft();
+implementationB();
+uint256 costB = g - gasleft();
+
+assertLt(costB, costA);  // B should be cheaper
+```
+
+**Note**: Results vary based on state (cold/warm storage)
+</details>
+
+---
+
+## Section 5: Advanced Concepts
+
+### Question 16: Why use Solmate over OpenZeppelin for hooks?
+
+**A)** Solmate has more features
+**B)** Solmate is more gas-efficient
+**C)** OpenZeppelin is deprecated
+**D)** Uniswap requires Solmate
+
+<details>
+<summary>Answer</summary>
+
+**Correct Answer: B**
+
+Solmate is optimized for gas efficiency over features:
+
+**Gas comparison (ERC-1155)**:
+```
+transferFrom() gas cost:
+OpenZeppelin: ~25,000 gas
+Solmate:      ~21,000 gas
+Savings:       4,000 gas (16%)
+```
+
+**At scale**:
+```
+1 million transfers/day
+× 4,000 gas saved
+× $0.00001 per gas
+= $40/day savings
+= $14,600/year
+```
+
+**Trade-offs**:
+
+**Solmate**:
+- ✅ Minimal gas cost
+- ✅ Clean, audited code
+- ❌ Fewer safety checks
+- ❌ Less features
+- ❌ Less documentation
+
+**OpenZeppelin**:
+- ✅ Maximum safety
+- ✅ Extensive features
+- ✅ Great documentation
+- ❌ Higher gas cost
+- ❌ More complexity
+
+**When to use each**:
+- **Hooks**: Solmate (gas matters, hooks run on every swap)
+- **Governance**: OpenZeppelin (safety over gas)
+- **Learning**: OpenZeppelin (better docs)
+</details>
+
+---
+
+### Question 17: What's the purpose of HookMiner?
+
+**A)** Mine cryptocurrency
+**B)** Find CREATE2 salt for valid hook address
+**C)** Optimize gas mining
+**D)** Generate random addresses
+
+<details>
+<summary>Answer</summary>
+
+**Correct Answer: B**
+
+HookMiner brute-forces CREATE2 salts to find hook addresses with correct permission bits:
+
+**The problem**:
+```
+Your hook needs: afterSwap + afterAddLiquidity
+Required address bits: 0x00C0 (binary: ...11000000)
+
+Random deployment: 0x123...7A4F  ❌ Wrong bits!
+```
+
+**HookMiner solution**:
+```solidity
+function find(
+    address deployer,
+    uint160 flags,  // Required permission bits
+    bytes memory creationCode,
+    bytes memory constructorArgs
+) external returns (address hookAddress, bytes32 salt) {
+    for (uint256 i = 0; i < MAX_LOOP; i++) {
+        bytes32 testSalt = bytes32(i);
+        address computed = computeCreate2Address(
+            deployer, testSalt, creationCode, constructorArgs
+        );
+
+        if ((uint160(computed) & 0x3FFF) == flags) {
+            return (computed, testSalt);  // Found it!
+        }
+    }
+    revert("Salt not found");
+}
+```
+
+**Usage**:
+```solidity
+uint160 flags = Hooks.AFTER_SWAP_FLAG | Hooks.AFTER_ADD_LIQUIDITY_FLAG;
+
+(address hookAddress, bytes32 salt) = HookMiner.find(
+    deployer,
+    flags,
+    type(PointsHook).creationCode,
+    abi.encode(poolManager)
+);
+
+// Deploy with found salt
+PointsHook hook = new PointsHook{salt: salt}(poolManager);
+// address(hook) == hookAddress ✓
+```
+
+**Performance**:
+- Simple permissions (2-3 hooks): Seconds
+- Complex permissions (8+ hooks): Minutes
+- MAX_LOOP typically 100,000-1,000,000
+</details>
+
+---
+
+### Question 18: What's the benefit of transient storage (TSTORE/TLOAD)?
+
+**A)** Persists across transactions
+**B)** Cheaper than regular storage for temporary data
+**C)** Required for hooks
+**D)** Faster than memory
+
+<details>
+<summary>Answer</summary>
+
+**Correct Answer: B**
+
