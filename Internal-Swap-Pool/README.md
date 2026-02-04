@@ -1,8 +1,8 @@
 # Internal Swap Pool - Custom Pricing Curve Hook
 
-**Author**: Allan Robinson
-**Project**: Uniswap V4 Hooks Incubator - Week 3 Homework
-**Date**: February 3, 2026
+- **Author**: Allan Robinson
+- **Project**: Uniswap V4 Hooks Incubator - Week 3 Homework
+- **Date**: February 3, 2026
 
 ## Overview
 
@@ -60,11 +60,11 @@ User: Sell 50 TOKEN for ETH
 
 ## Key Features
 
-✅ **Single-Token Fee Distribution**: All LP fees in ETH
-✅ **Reduced Price Impact**: Internal fills don't affect pool price
-✅ **Gas Efficient**: Uses current pool price, no AMM computation
-✅ **Fair Launch Friendly**: Perfect for token launchpads
-✅ **Trustless**: All logic on-chain, atomic execution
+- ✅ **Single-Token Fee Distribution**: All LP fees in ETH
+- ✅ **Reduced Price Impact**: Internal fills don't affect pool price
+- ✅ **Gas Efficient**: Uses current pool price, no AMM computation
+- ✅ **Fair Launch Friendly**: Perfect for token launchpads
+- ✅ **Trustless**: All logic on-chain, atomic execution
 
 ## Technical Implementation
 
