@@ -1,9 +1,9 @@
 # Week 3 Homework: Custom Pricing Curve Hook
 
-**Author**: Allan Robinson
-**Email**: (your email here)
-**Date**: February 3, 2026
-**Assignment**: UHI Custom Pricing Curve Hook Quest
+- **Author**: Allan Robinson
+- **Email**: allangithaiga5@gmail.com
+- **Date**: February 3, 2026
+- **Assignment**: UHI Custom Pricing Curve Hook Quest
 
 ---
 
@@ -25,10 +25,10 @@
 
 ### Requirements
 
-✅ **Attended Workshop 10**: Yes - February 3, 2026 class on Return Delta Hooks
-✅ **Reviewed Curriculum**: Completed study notes for Custom Curve CSMM Lesson
-✅ **Built Custom Hook**: Internal Swap Pool with beforeSwapReturnDelta
-✅ **Public GitHub**: Repository available at `/home/robinsoncodes/Documents/uniswap-UH8/Internal-Swap-Pool`
+- ✅ **Attended Workshop 10**: Yes - February 3, 2026 class on Return Delta Hooks
+- ✅ **Reviewed Curriculum**: Completed study notes for Custom Curve CSMM Lesson
+- ✅ **Built Custom Hook**: Internal Swap Pool with beforeSwapReturnDelta
+- ✅ **Public GitHub**: Repository available at `uniswap-UH8/Internal-Swap-Pool`
 
 ### Objective
 
@@ -657,25 +657,10 @@ The Internal Swap Pool demonstrates how hooks can solve actual problems (unwante
 
 I'm excited to explore more advanced Return Delta patterns in future classes!
 
----
 
-## Quest Submission Checklist
+- **Submitted by**: Allan Robinson
+- **Date**: February 3, 2026
+- **Email**: (your email for quest submission)
 
-- [x] Attended Workshop 10 or watched recordings
-- [x] Reviewed Custom Curve CSMM Lesson
-- [x] Built Custom Pricing Curve Hook
-- [x] Hook uses beforeSwapReturnDelta
-- [x] Repository is public
-- [x] Code is documented with NatSpec
-- [x] README explains design and implementation
-- [x] Homework explanation document completed
-
-**Submitted by**: Allan Robinson
-**Date**: February 3, 2026
-**Email**: (your email for quest submission)
-
----
-
-**Allan Robinson**
 Custom Pricing Curve Hook Homework - Week 3 - February 3, 2026
 
