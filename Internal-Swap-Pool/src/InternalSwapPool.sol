@@ -188,11 +188,12 @@ contract InternalSwapPool is BaseHook {
                 );
 
                 // Return BeforeSwapDelta
-                // Specified = ETH (what user wants)
-                // Unspecified = TOKEN (what user will pay)
+                // Specified = ETH (what user wants) - currency0
+                // Unspecified = TOKEN (what user will pay) - currency1
+                // Hook gives ETH (negative) and takes TOKEN (positive)
                 beforeSwapDelta_ = toBeforeSwapDelta(
-                    -int128(int256(tokenIn)),  // Hook takes TOKEN
-                    int128(int256(ethOut))     // Hook gives ETH
+                    -int128(int256(ethOut)),   // Specified (ETH): negative = hook gives
+                    int128(int256(tokenIn))    // Unspecified (TOKEN): positive = hook takes
                 );
             } else {
                 // EXACT INPUT: User selling specific amount of TOKEN
@@ -203,11 +204,12 @@ contract InternalSwapPool is BaseHook {
                 );
 
                 // Return BeforeSwapDelta
-                // Specified = TOKEN (what user is selling)
-                // Unspecified = ETH (what user will receive)
+                // Specified = TOKEN (what user is selling) - currency1
+                // Unspecified = ETH (what user will receive) - currency0
+                // Hook takes TOKEN (positive) and gives ETH (negative)
                 beforeSwapDelta_ = toBeforeSwapDelta(
-                    int128(int256(ethOut)),     // Hook gives ETH
-                    -int128(int256(tokenIn))    // Hook takes TOKEN
+                    int128(int256(tokenIn)),    // Specified (TOKEN): positive = hook takes
+                    -int128(int256(ethOut))     // Unspecified (ETH): negative = hook gives
                 );
             }
 
@@ -215,15 +217,11 @@ contract InternalSwapPool is BaseHook {
             _poolFees[poolId].amount0 += ethOut;    // Gained ETH
             _poolFees[poolId].amount1 -= tokenIn;   // Spent TOKEN
 
-            // Sync balances with PoolManager
-            poolManager.sync(key.currency0);
-            poolManager.sync(key.currency1);
-
-            // Transfer tokens
-            // Give ETH from PoolManager to hook
-            poolManager.take(key.currency0, address(this), ethOut);
-            // Take TOKEN from hook and send to PoolManager
-            key.currency1.settle(poolManager, address(this), tokenIn, false);
+            // NOTE: BeforeSwapDelta handles token movements automatically
+            // The delta return value tells PoolManager to:
+            // 1. Give ethOut to the hook (from pool)
+            // 2. Take tokenIn from the hook (to pool)
+            // No need to call take/settle manually - that would be double accounting!
 
             emit InternalSwapExecuted(poolId, tokenIn, ethOut, sender);
         }
