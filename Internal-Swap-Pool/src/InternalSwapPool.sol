@@ -344,11 +344,12 @@ contract InternalSwapPool is BaseHook {
             _poolFees[key.toId()].amount0 += swapFee;
         }
 
-        // Take the fee from PoolManager to our contract
-        swapFeeCurrency.take(poolManager, address(this), swapFee, false);
+        // Take the fee from the swap output
+        // Positive delta means: hook took currency (reduces user's output by this amount)
+        hookDeltaUnspecified_ = int128(int256(swapFee));
 
-        // Reduce user's receive amount by the fee
-        hookDeltaUnspecified_ = -int128(int256(swapFee));
+        // Actually take the tokens to settle the debt created by the positive delta
+        swapFeeCurrency.take(poolManager, address(this), swapFee, false);
 
         // Distribute accumulated ETH fees to LPs
         _distributeFees(key);
@@ -369,6 +370,7 @@ contract InternalSwapPool is BaseHook {
             return;
         }
 
+        // Tokens are already in the hook contract (taken in afterSwap)
         // Donate to LPs (all in token0/ETH)
         BalanceDelta delta = poolManager.donate(_poolKey, donateAmount, 0, "");
 
