@@ -9,7 +9,6 @@ import {Currency, CurrencyLibrary} from "@uniswap/v4-core/src/types/Currency.sol
 import {PoolId, PoolIdLibrary} from "@uniswap/v4-core/src/types/PoolId.sol";
 import {PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
 import {BeforeSwapDelta, BeforeSwapDeltaLibrary, toBeforeSwapDelta} from "@uniswap/v4-core/src/types/BeforeSwapDelta.sol";
-import {SwapParams} from "@uniswap/v4-core/src/types/PoolOperation.sol";
 import {StateLibrary} from "@uniswap/v4-core/src/libraries/StateLibrary.sol";
 import {CurrencySettler} from "@uniswap/v4-core/test/utils/CurrencySettler.sol";
 
@@ -282,7 +281,7 @@ contract InternalSwapPool is BaseHook {
         // Calculate how much ETH all our TOKEN fees are worth
         (, ethOut, tokenIn, ) = SwapMath.computeSwapStep({
             sqrtPriceCurrentX96: sqrtPriceX96,
-            sqrtPriceLimitX96: params.sqrtPriceLimitX96,
+            sqrtPriceTargetX96: params.sqrtPriceLimitX96,
             liquidity: poolManager.getLiquidity(poolId),
             amountRemaining: int256(_poolFees[poolId].amount1),
             feePips: 0

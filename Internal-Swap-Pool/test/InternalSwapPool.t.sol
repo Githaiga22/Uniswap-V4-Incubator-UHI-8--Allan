@@ -9,6 +9,7 @@ pragma solidity ^0.8.26;
  */
 import {Test} from "forge-std/Test.sol";
 import {console} from "forge-std/console.sol";
+import {IERC20} from "forge-std/interfaces/IERC20.sol";
 import {Deployers} from "@uniswap/v4-core/test/utils/Deployers.sol";
 import {InternalSwapPool} from "../src/InternalSwapPool.sol";
 import {PoolManager} from "@uniswap/v4-core/src/PoolManager.sol";
@@ -17,9 +18,9 @@ import {Hooks} from "@uniswap/v4-core/src/libraries/Hooks.sol";
 import {PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
 import {PoolId, PoolIdLibrary} from "@uniswap/v4-core/src/types/PoolId.sol";
 import {Currency, CurrencyLibrary} from "@uniswap/v4-core/src/types/Currency.sol";
-import {SwapParams} from "@uniswap/v4-core/src/types/PoolOperation.sol";
 import {BalanceDelta} from "@uniswap/v4-core/src/types/BalanceDelta.sol";
 import {StateLibrary} from "@uniswap/v4-core/src/libraries/StateLibrary.sol";
+import {PoolSwapTest} from "@uniswap/v4-core/src/test/PoolSwapTest.sol";
 import {HookMiner} from "./utils/HookMiner.sol";
 
 /**
@@ -55,6 +56,9 @@ contract InternalSwapPoolTest is Test, Deployers {
         // STEP 1: Deploy Uniswap v4 core contracts
         deployFreshManagerAndRouters();
 
+        // STEP 1.5: Deploy and set up currencies
+        (currency0, currency1) = deployMintAndApprove2Currencies();
+
         // STEP 2: Mine a salt for correct hook address
         // InternalSwapPool needs these permissions:
         // - beforeSwap
@@ -77,7 +81,7 @@ contract InternalSwapPoolTest is Test, Deployers {
         );
 
         // STEP 3: Deploy the hook
-        hook = new InternalSwapPool{salt: salt}(IPoolManager(address(manager)), address(0));
+        hook = new InternalSwapPool{salt: salt}(address(manager), address(0));
         require(address(hook) == hookAddress, "Hook address mismatch");
 
         console.log("InternalSwapPool deployed at:", address(hook));
@@ -97,8 +101,8 @@ contract InternalSwapPoolTest is Test, Deployers {
         deal(Currency.unwrap(currency1), lp, 100 ether);
 
         vm.startPrank(lp);
-        currency0.approve(address(modifyLiquidityRouter), type(uint256).max);
-        currency1.approve(address(modifyLiquidityRouter), type(uint256).max);
+        IERC20(Currency.unwrap(currency0)).approve(address(modifyLiquidityRouter), type(uint256).max);
+        IERC20(Currency.unwrap(currency1)).approve(address(modifyLiquidityRouter), type(uint256).max);
 
         modifyLiquidityRouter.modifyLiquidity(
             key,
@@ -120,14 +124,14 @@ contract InternalSwapPoolTest is Test, Deployers {
 
         // Approve router
         vm.prank(alice);
-        currency0.approve(address(swapRouter), type(uint256).max);
+        IERC20(Currency.unwrap(currency0)).approve(address(swapRouter), type(uint256).max);
         vm.prank(alice);
-        currency1.approve(address(swapRouter), type(uint256).max);
+        IERC20(Currency.unwrap(currency1)).approve(address(swapRouter), type(uint256).max);
 
         vm.prank(bob);
-        currency0.approve(address(swapRouter), type(uint256).max);
+        IERC20(Currency.unwrap(currency0)).approve(address(swapRouter), type(uint256).max);
         vm.prank(bob);
-        currency1.approve(address(swapRouter), type(uint256).max);
+        IERC20(Currency.unwrap(currency1)).approve(address(swapRouter), type(uint256).max);
     }
 
     /**
