@@ -96,20 +96,21 @@ contract InternalSwapPoolTest is Test, Deployers {
         );
 
         // STEP 5: Add initial liquidity
-        // Give LP tokens
-        deal(Currency.unwrap(currency0), lp, 100 ether);
-        deal(Currency.unwrap(currency1), lp, 100 ether);
+        // Give LP tokens - need enough for wide range position
+        deal(Currency.unwrap(currency0), lp, 100000 ether);
+        deal(Currency.unwrap(currency1), lp, 100000 ether);
 
         vm.startPrank(lp);
         IERC20(Currency.unwrap(currency0)).approve(address(modifyLiquidityRouter), type(uint256).max);
         IERC20(Currency.unwrap(currency1)).approve(address(modifyLiquidityRouter), type(uint256).max);
 
+        // Use full-range liquidity with high depth to prevent price limit exhaustion
         modifyLiquidityRouter.modifyLiquidity(
             key,
             IPoolManager.ModifyLiquidityParams({
-                tickLower: -60,
-                tickUpper: 60,
-                liquidityDelta: 10 ether,
+                tickLower: -887220,
+                tickUpper: 887220,
+                liquidityDelta: 1000 ether,
                 salt: bytes32(0)
             }),
             ZERO_BYTES
