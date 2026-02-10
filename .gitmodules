@@ -10,9 +10,12 @@
 [submodule "Internal-Swap-Pool/lib/forge-std"]
 	path = Internal-Swap-Pool/lib/forge-std
 	url = https://github.com/foundry-rs/forge-std
+	ignore = dirty
 [submodule "Internal-Swap-Pool/lib/v4-core"]
 	path = Internal-Swap-Pool/lib/v4-core
 	url = https://github.com/Uniswap/v4-core
+	ignore = dirty
 [submodule "Internal-Swap-Pool/lib/v4-periphery"]
 	path = Internal-Swap-Pool/lib/v4-periphery
 	url = https://github.com/Uniswap/v4-periphery
+	ignore = dirty
