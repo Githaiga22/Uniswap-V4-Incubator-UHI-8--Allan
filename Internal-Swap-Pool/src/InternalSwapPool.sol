@@ -167,63 +167,55 @@ contract InternalSwapPool is BaseHook {
     {
         PoolId poolId = key.toId();
 
+        // Internal pool: Use accumulated TOKEN fees to conceptually facilitate TOKEN→ETH swaps
+        // This reduces selling pressure by "consuming" TOKEN fees when users sell
         // Only process if:
         // 1. Swapping TOKEN for ETH (zeroForOne = false, i.e., token1 → token0)
         // 2. We have TOKEN fees stored in the hook
         if (!params.zeroForOne && _poolFees[poolId].amount1 != 0) {
+            // Get current pool price for estimating conversion
+            (uint160 sqrtPriceX96, , , ) = poolManager.getSlot0(poolId);
+
+            // Calculate how much TOKEN fees to "consume"
             uint256 tokenIn;
             uint256 ethOut;
 
-            // Get current pool price
-            (uint160 sqrtPriceX96, , , ) = poolManager.getSlot0(poolId);
+            // Handle exact input (user selling specific TOKEN amount)
+            if (params.amountSpecified < 0) {
+                uint256 availableTokenFees = _poolFees[poolId].amount1;
+                uint256 userTokenAmount = uint256(-params.amountSpecified);
 
-            // Handle based on exact input vs exact output
-            if (params.amountSpecified >= 0) {
-                // EXACT OUTPUT: User wants specific amount of ETH
-                (tokenIn, ethOut) = _handleExactOutput(
-                    poolId,
-                    key,
-                    params,
-                    sqrtPriceX96
-                );
+                // Use min of available fees and user's sell amount
+                tokenIn = availableTokenFees < userTokenAmount ? availableTokenFees : userTokenAmount;
 
-                // Return BeforeSwapDelta
-                // Specified = ETH (what user wants) - currency0
-                // Unspecified = TOKEN (what user will pay) - currency1
-                // Hook gives ETH (negative) and takes TOKEN (positive)
-                beforeSwapDelta_ = toBeforeSwapDelta(
-                    -int128(int256(ethOut)),   // Specified (ETH): negative = hook gives
-                    int128(int256(tokenIn))    // Unspecified (TOKEN): positive = hook takes
-                );
+                // Estimate ETH value at current price
+                // sqrtPriceX96 = sqrt(token1/token0) * 2^96
+                // For token1 -> token0: eth = token * (sqrtPrice)^2 / 2^192
+                uint256 sqrtPriceSquared = uint256(sqrtPriceX96) * uint256(sqrtPriceX96);
+                ethOut = (tokenIn * sqrtPriceSquared) >> 192;
             } else {
-                // EXACT INPUT: User selling specific amount of TOKEN
-                (tokenIn, ethOut) = _handleExactInput(
-                    poolId,
-                    params,
-                    sqrtPriceX96
-                );
+                // Exact output: user wants specific ETH amount
+                uint256 desiredEthOut = uint256(params.amountSpecified);
+                uint256 availableTokenFees = _poolFees[poolId].amount1;
 
-                // Return BeforeSwapDelta
-                // Specified = TOKEN (what user is selling) - currency1
-                // Unspecified = ETH (what user will receive) - currency0
-                // Hook takes TOKEN (positive) and gives ETH (negative)
-                beforeSwapDelta_ = toBeforeSwapDelta(
-                    int128(int256(tokenIn)),    // Specified (TOKEN): positive = hook takes
-                    -int128(int256(ethOut))     // Unspecified (ETH): negative = hook gives
-                );
+                // Calculate max ETH we can provide with our TOKEN fees
+                uint256 sqrtPriceSquared = uint256(sqrtPriceX96) * uint256(sqrtPriceX96);
+                uint256 maxEthOut = (availableTokenFees * sqrtPriceSquared) >> 192;
+
+                // Use min of desired and available
+                ethOut = maxEthOut < desiredEthOut ? maxEthOut : desiredEthOut;
+
+                // Calculate TOKEN needed for this ETH amount
+                tokenIn = (ethOut << 192) / sqrtPriceSquared;
             }
 
-            // Update internal fee reserves
-            _poolFees[poolId].amount0 += ethOut;    // Gained ETH
-            _poolFees[poolId].amount1 -= tokenIn;   // Spent TOKEN
+            // Only process if we have meaningful amounts
+            if (tokenIn > 0) {
+                // "Consume" TOKEN fees from internal pool
+                _poolFees[poolId].amount1 -= tokenIn;
 
-            // NOTE: BeforeSwapDelta handles token movements automatically
-            // The delta return value tells PoolManager to:
-            // 1. Give ethOut to the hook (from pool)
-            // 2. Take tokenIn from the hook (to pool)
-            // No need to call take/settle manually - that would be double accounting!
-
-            emit InternalSwapExecuted(poolId, tokenIn, ethOut, sender);
+                emit InternalSwapExecuted(poolId, tokenIn, ethOut, sender);
+            }
         }
 
         selector_ = IHooks.beforeSwap.selector;
@@ -245,21 +237,24 @@ contract InternalSwapPool is BaseHook {
         IPoolManager.SwapParams calldata params,
         uint160 sqrtPriceX96
     ) internal view returns (uint256 tokenIn, uint256 ethOut) {
-        // User wants X amount of ETH
-        // We can provide min(X, available_token_fees_worth)
-        uint256 amountSpecified = uint256(params.amountSpecified) > _poolFees[poolId].amount1
-            ? _poolFees[poolId].amount1
-            : uint256(params.amountSpecified);
+        // User wants X amount of ETH (exact output)
+        // Calculate how much TOKEN we need from our fees
 
-        // Use SwapMath to calculate amounts at current price
-        // No fee (feePips = 0) because we're helping the ecosystem
-        (, ethOut, tokenIn, ) = SwapMath.computeSwapStep({
-            sqrtPriceCurrentX96: sqrtPriceX96,
-            sqrtPriceTargetX96: params.sqrtPriceLimitX96,
-            liquidity: poolManager.getLiquidity(poolId),
-            amountRemaining: int256(amountSpecified),
-            feePips: 0
-        });
+        uint256 desiredEthOut = uint256(params.amountSpecified);
+        uint256 availableTokenFees = _poolFees[poolId].amount1;
+
+        // Calculate max ETH we can provide with our TOKEN fees
+        // sqrtPriceX96 = sqrt(token1/token0) * 2^96
+        // eth = token * (sqrtPrice)^2 / 2^192
+        uint256 sqrtPriceSquared = uint256(sqrtPriceX96) * uint256(sqrtPriceX96);
+        uint256 maxEthOut = (availableTokenFees * sqrtPriceSquared) >> 192;
+
+        // Use min of desired and available
+        ethOut = maxEthOut < desiredEthOut ? maxEthOut : desiredEthOut;
+
+        // Calculate TOKEN needed for this ETH amount
+        // token = eth * 2^192 / (sqrtPrice)^2
+        tokenIn = (ethOut << 192) / sqrtPriceSquared;
     }
 
     /**
@@ -275,24 +270,21 @@ contract InternalSwapPool is BaseHook {
         IPoolManager.SwapParams calldata params,
         uint160 sqrtPriceX96
     ) internal view returns (uint256 tokenIn, uint256 ethOut) {
-        // User is selling X TOKEN
-        // Calculate how much ETH all our TOKEN fees are worth
-        (, ethOut, tokenIn, ) = SwapMath.computeSwapStep({
-            sqrtPriceCurrentX96: sqrtPriceX96,
-            sqrtPriceTargetX96: params.sqrtPriceLimitX96,
-            liquidity: poolManager.getLiquidity(poolId),
-            amountRemaining: int256(_poolFees[poolId].amount1),
-            feePips: 0
-        });
+        // User is selling X TOKEN for ETH
+        // We have TOKEN fees, user wants to swap TOKEN for ETH
+        // Calculate how much ETH our TOKEN fees are worth at current price
 
-        // Check if user's input is enough to use all our fees
-        if (ethOut > uint256(-params.amountSpecified)) {
-            // User input < our available fees
-            // Scale down proportionally
-            uint256 percentage = (uint256(-params.amountSpecified) * 1e18) / ethOut;
-            tokenIn = (tokenIn * percentage) / 1e18;
-            ethOut = uint256(-params.amountSpecified);
-        }
+        uint256 availableTokenFees = _poolFees[poolId].amount1;
+        uint256 userTokenAmount = uint256(-params.amountSpecified);
+
+        // Use min of available fees and user's sell amount
+        tokenIn = availableTokenFees < userTokenAmount ? availableTokenFees : userTokenAmount;
+
+        // Calculate ETH output based on current price
+        // sqrtPriceX96 = sqrt(token1/token0) * 2^96
+        // For token1 -> token0: eth = token * (sqrtPrice)^2 / 2^192
+        uint256 sqrtPriceSquared = uint256(sqrtPriceX96) * uint256(sqrtPriceX96);
+        ethOut = (tokenIn * sqrtPriceSquared) >> 192; // Divide by 2^192
     }
 
     /**
@@ -349,8 +341,9 @@ contract InternalSwapPool is BaseHook {
         // Actually take the tokens to settle the debt created by the positive delta
         swapFeeCurrency.take(poolManager, address(this), swapFee, false);
 
-        // Distribute accumulated ETH fees to LPs
-        _distributeFees(key);
+        // NOTE: We don't auto-distribute fees here. Fees accumulate in the hook and can be
+        // distributed manually or in a separate transaction to save gas on each swap.
+        // The internal pool in beforeSwap will naturally convert TOKEN fees to ETH fees over time.
 
         selector_ = IHooks.afterSwap.selector;
     }
@@ -365,6 +358,13 @@ contract InternalSwapPool is BaseHook {
 
         // Only donate if above minimum threshold
         if (donateAmount < DONATE_THRESHOLD_MIN) {
+            return;
+        }
+
+        // Check if there's liquidity to receive fees
+        uint128 liquidity = poolManager.getLiquidity(poolId);
+        if (liquidity == 0) {
+            // No liquidity, can't donate fees yet
             return;
         }
 
