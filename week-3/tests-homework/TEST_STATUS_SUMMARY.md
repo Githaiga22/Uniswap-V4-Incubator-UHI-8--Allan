@@ -1,8 +1,8 @@
 # InternalSwapPool Test Status Summary
 
-**Date**: February 5, 2026
-**Project**: Uniswap V4 InternalSwapPool Hook
-**Final Test Score**: 5/11 tests passing (45.5%)
+- **Date**: February 5, 2026
+- **Project**: Uniswap V4 InternalSwapPool Hook
+- **Final Test Score**: 5/11 tests passing (45.5%)
 
 ---
 
