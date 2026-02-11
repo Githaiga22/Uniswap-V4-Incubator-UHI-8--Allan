@@ -22,11 +22,11 @@ We built an Internal Swap Pool hook that:
 
 By the end of today's session, I should be able to:
 
-✅ Understand Return Delta hooks and why they're called "NoOp"
-✅ Distinguish between `BalanceDelta` and `BeforeSwapDelta`
-✅ Use `beforeSwapReturnDelta` to customize swap logic
-✅ Implement an internal swap pool that frontruns Uniswap swaps
-✅ Build custom pricing curves
+[x] Understand Return Delta hooks and why they're called "NoOp"
+[x] Distinguish between `BalanceDelta` and `BeforeSwapDelta`
+[x] Use `beforeSwapReturnDelta` to customize swap logic
+[x] Implement an internal swap pool that frontruns Uniswap swaps
+[x] Build custom pricing curves
 
 ---
 
@@ -62,7 +62,7 @@ In Uniswap V4 context:
 │  User → Swap Router → PoolManager       │
 │         → beforeSwap (Hook)             │
 │         → ❌ Core AMM Skipped (NoOp)    │
-│         → ✅ Custom Pricing Logic       │
+│         → [x] Custom Pricing Logic       │
 │         → Balance Changes               │
 │                                         │
 └─────────────────────────────────────────┘
@@ -371,7 +371,7 @@ amountToSwap = -100 + 100 = 0  // Zero!
 │     User sends 1 ETH → PM               │
 │     User receives 100 TOKEN ← PM        │
 │                                         │
-│  ✅ Transaction complete                │
+│  [x] Transaction complete                │
 │                                         │
 └─────────────────────────────────────────┘
 ```
@@ -413,7 +413,7 @@ amountToSwap = -100 + 100 = 0  // Zero!
 │     User sends 1 ETH → PM → Hook        │
 │     User receives 100 TOKEN ← Hook      │
 │                                         │
-│  ✅ Transaction complete                │
+│  [x] Transaction complete                │
 │     (Pool reserves unchanged!)          │
 │                                         │
 └─────────────────────────────────────────┘
@@ -459,10 +459,10 @@ LPs earn fees in BOTH tokens!
 **What if we could**:
 
 ```
-✅ Collect ALL fees in ETH
-✅ LPs never need to sell TOKEN
-✅ Zero selling pressure on TOKEN
-✅ Everyone wins
+[x] Collect ALL fees in ETH
+[x] LPs never need to sell TOKEN
+[x] Zero selling pressure on TOKEN
+[x] Everyone wins
 ```
 
 This is what our Internal Swap Pool solves!
@@ -671,12 +671,12 @@ function getHookPermissions()
         afterAddLiquidity: false,
         beforeRemoveLiquidity: false,
         afterRemoveLiquidity: false,
-        beforeSwap: true,                    // ✅ Fill internal swaps
-        afterSwap: true,                     // ✅ Capture fees
+        beforeSwap: true,                    // [x] Fill internal swaps
+        afterSwap: true,                     // [x] Capture fees
         beforeDonate: false,
         afterDonate: false,
-        beforeSwapReturnDelta: true,         // ✅ Custom pricing
-        afterSwapReturnDelta: true,          // ✅ Fee extraction
+        beforeSwapReturnDelta: true,         // [x] Custom pricing
+        afterSwapReturnDelta: true,          // [x] Fee extraction
         afterAddLiquidityReturnDelta: false,
         afterRemoveLiquidityReturnDelta: false
     });
@@ -1032,8 +1032,8 @@ User final:
 User: "Sell 50 TOKEN for ETH"
 
 beforeSwap:
-- Swap direction: TOKEN → ETH (zeroForOne = false) ✅
-- Hook has TOKEN fees: 0.99 TOKEN ✅
+- Swap direction: TOKEN → ETH (zeroForOne = false) [x]
+- Hook has TOKEN fees: 0.99 TOKEN [x]
 - Can partially fill!
 
 Calculate using SwapMath:
@@ -1087,7 +1087,7 @@ LP receives fees in both ETH and TOKEN
 Must sell TOKEN to realize profit
 Selling creates downward pressure
 
-✅ Internal Swap Pool:
+[x] Internal Swap Pool:
 LP receives fees ONLY in ETH
 No need to sell TOKEN
 Zero selling pressure
@@ -1286,7 +1286,7 @@ function beforeSwap(...) returns (bytes4, BeforeSwapDelta, uint24) {
     uint fee = ???  // Don't know output amount yet
 }
 
-// ✅ RIGHT: Take fees in afterSwap
+// [x] RIGHT: Take fees in afterSwap
 function afterSwap(...) returns (bytes4, int128) {
     // Swap complete - we know user received X tokens
     int128 outputAmount = delta.amount1();
@@ -1432,12 +1432,12 @@ function afterSwap(address sender, ...) {
 
 Build a custom pricing curve hook with:
 
-1. ✅ Use beforeSwapReturnDelta
-2. ✅ Implement custom pricing logic (not x*y=k)
-3. ✅ Handle both swap directions
-4. ✅ Public GitHub repository
-5. ✅ Tests with >80% coverage
-6. ✅ Documentation explaining your curve
+1. [x] Use beforeSwapReturnDelta
+2. [x] Implement custom pricing logic (not x*y=k)
+3. [x] Handle both swap directions
+4. [x] Public GitHub repository
+5. [x] Tests with >80% coverage
+6. [x] Documentation explaining your curve
 
 ### My Plan
 

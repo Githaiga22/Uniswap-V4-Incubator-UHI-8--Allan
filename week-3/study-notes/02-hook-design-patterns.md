@@ -81,9 +81,9 @@ function afterSwap(
 
 ### Key Takeaways
 
-- ✅ Always update storage before external calls
-- ✅ Emit events before external calls
-- ✅ Use try-catch for optional external calls
+- [x] Always update storage before external calls
+- [x] Emit events before external calls
+- [x] Use try-catch for optional external calls
 - ❌ Never trust external contract behavior
 
 ---
@@ -152,7 +152,7 @@ function afterAddLiquidity(...) internal override returns (bytes4, BalanceDelta)
 - 🔥 **Gas savings**: Function calls are cheaper than duplicated code
 - 🔍 **Easier auditing**: Review logic once instead of N times
 - 🛠️ **Maintainability**: Fix bugs in one place
-- ✅ **Consistency**: Guaranteed same behavior everywhere
+- [x] **Consistency**: Guaranteed same behavior everywhere
 
 ---
 
@@ -259,10 +259,10 @@ function _getPrice() internal view returns (uint256) {
 
 ### Key Principles
 
-- ✅ Never let external failures block core functionality
-- ✅ Always have fallback mechanisms
-- ✅ Log all failures for monitoring
-- ✅ Consider circuit breakers for critical paths
+- [x] Never let external failures block core functionality
+- [x] Always have fallback mechanisms
+- [x] Log all failures for monitoring
+- [x] Consider circuit breakers for critical paths
 
 ---
 
@@ -335,11 +335,11 @@ contract PointsHook is BaseHook {
 ```solidity
 // Good event design
 event PointsAwarded(
-    address indexed user,      // ✅ Indexed: Can filter by user
-    PoolId indexed poolId,     // ✅ Indexed: Can filter by pool
-    uint256 points,            // ✅ Not indexed: Just data
-    uint256 timestamp,         // ✅ Useful for sorting
-    string action              // ✅ Context (swap vs liquidity)
+    address indexed user,      // [x] Indexed: Can filter by user
+    PoolId indexed poolId,     // [x] Indexed: Can filter by pool
+    uint256 points,            // [x] Not indexed: Just data
+    uint256 timestamp,         // [x] Useful for sorting
+    string action              // [x] Context (swap vs liquidity)
 );
 
 // Query examples (off-chain):
@@ -352,12 +352,12 @@ event PointsAwarded(
 
 | Data | Storage | Events |
 |------|---------|--------|
-| Current user balances | ✅ Yes | ✅ Yes (optional) |
-| Total swaps counter | ✅ Yes | ❌ No |
-| Historical swap details | ❌ No | ✅ Yes |
-| User's last action time | ✅ Yes | ❌ No |
-| All swaps ever (for UI) | ❌ No | ✅ Yes |
-| Pool configuration | ✅ Yes | ❌ No |
+| Current user balances | [x] Yes | [x] Yes (optional) |
+| Total swaps counter | [x] Yes | ❌ No |
+| Historical swap details | ❌ No | [x] Yes |
+| User's last action time | [x] Yes | ❌ No |
+| All swaps ever (for UI) | ❌ No | [x] Yes |
+| Pool configuration | [x] Yes | ❌ No |
 
 **Rule of thumb**: If smart contracts need it → Storage. If only humans need it → Events.
 
@@ -383,7 +383,7 @@ contract SimplePointsHook is BaseHook {
     // No upgrade mechanism
     // No pause function
 
-    // ✅ Highest security: No attack surface for admin key compromise
+    // [x] Highest security: No attack surface for admin key compromise
     // ❌ No flexibility: Can't fix bugs or adjust parameters
 }
 ```

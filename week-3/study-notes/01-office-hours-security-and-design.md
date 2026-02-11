@@ -94,7 +94,7 @@ function afterSwap(...) {
     uint256 balanceBefore = token.balanceOf(address(this));
     token.transferFrom(sender, address(this), amountIn);
     uint256 actualReceived = token.balanceOf(address(this)) - balanceBefore;
-    userBalance[sender] += actualReceived;  // ✅ Accurate
+    userBalance[sender] += actualReceived;  // [x] Accurate
 }
 ```
 
@@ -234,24 +234,24 @@ Certain features **mandate** additional security measures regardless of risk sco
 ### Custom Math Triggers
 
 If your hook has custom curves or non-standard math:
-- ✅ **Required**: Math specialist audit
-- ✅ **Required**: Unit tests for edge cases
-- ✅ **Recommended**: Formal verification if TVL = 5
+- [x] **Required**: Math specialist audit
+- [x] **Required**: Unit tests for edge cases
+- [x] **Recommended**: Formal verification if TVL = 5
 
 ### TVL = 5 Triggers ($10M+)
 
 If your hook expects $10M+ TVL:
-- ✅ **Mandatory**: Continuous monitoring
-- ✅ **Mandatory**: Bug bounty program
-- ✅ **Recommended**: Formal verification
-- ✅ **Required**: Emergency procedures (pause/kill-switch)
+- [x] **Mandatory**: Continuous monitoring
+- [x] **Mandatory**: Bug bounty program
+- [x] **Recommended**: Formal verification
+- [x] **Required**: Emergency procedures (pause/kill-switch)
 
 ### Price Impact Triggers
 
 If your hook modifies fees or routing:
-- ✅ **Required**: Math specialist audit
-- ✅ **Mandatory**: Bug bounty
-- ✅ **Required**: Monitoring if TVL = 5
+- [x] **Required**: Math specialist audit
+- [x] **Mandatory**: Bug bounty
+- [x] **Required**: Monitoring if TVL = 5
 
 ---
 
@@ -554,7 +554,7 @@ If score > 10: Consider splitting into multiple hooks
 - 0 external dependencies = 0
 - 0 custom math = 0
 - 0 upgradeability = 0
-- **Total: 2 (LOW complexity)** ✅
+- **Total: 2 (LOW complexity)** [x]
 
 **Example**: Complex DeFi optimizer hook
 - 4 hook functions = 4
@@ -569,10 +569,10 @@ If score > 10: Consider splitting into multiple hooks
 
 | Use Case | Storage | Events |
 |----------|---------|--------|
-| Smart contract logic needs it | ✅ Yes | Optional |
-| Only frontend/indexer needs it | ❌ No | ✅ Yes |
-| Historical queries needed | ❌ No | ✅ Yes |
-| Gas optimization critical | ❌ No | ✅ Yes |
+| Smart contract logic needs it | [x] Yes | Optional |
+| Only frontend/indexer needs it | ❌ No | [x] Yes |
+| Historical queries needed | ❌ No | [x] Yes |
+| Gas optimization critical | ❌ No | [x] Yes |
 
 **Storage**: ~20,000 gas for new slot
 **Event**: ~1,500 gas per topic
@@ -617,7 +617,7 @@ Uniswap V4 on mainnet will have **permissioned hook deployment** initially. Not 
 │     - OPSEC procedures                  │
 │     ↓                                   │
 │  6. Decision:                           │
-│     ✅ Approved → Add to allowlist      │
+│     [x] Approved → Add to allowlist      │
 │     ⏳ Pending → Address feedback       │
 │     ❌ Rejected → Fix issues & resubmit │
 │                                         │
@@ -694,7 +694,7 @@ During office hours, I asked about potential hook ideas I've been thinking about
 
 **Discussion points**:
 
-✅ **Technically possible**:
+[x] **Technically possible**:
 ```solidity
 function afterSwap(...) internal override returns (bytes4, int128) {
     // Calculate fee (e.g., 0.1% of swap)
@@ -709,7 +709,7 @@ function afterSwap(...) internal override returns (bytes4, int128) {
 }
 ```
 
-✅ **User opt-in**: Could be explicit (users choose pools with donation hook)
+[x] **User opt-in**: Could be explicit (users choose pools with donation hook)
 
 ⚠️ **Challenges**:
 - **Trust**: How to verify charity receives funds?
@@ -1014,9 +1014,9 @@ The allowlist process shows hooks don't exist in isolation. I need to:
 ### 5. My Hook Ideas Are Viable
 
 The discussion validated several of my concepts:
-- ✅ NFT arbitrage: Possible (medium risk)
-- ✅ Donation hooks: Possible (some challenges)
-- ✅ AI integration: Possible (high complexity)
+- [x] NFT arbitrage: Possible (medium risk)
+- [x] Donation hooks: Possible (some challenges)
+- [x] AI integration: Possible (high complexity)
 
 Next step: Prototype the simplest version of each.
 
